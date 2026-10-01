@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Log files and runtime dumps
+*.log
+logs/
+project_dump.txt
+dumper.bat
+
+# Session data (runtime history)
+collector/chat_games.jsonl
+
+# Temporary files
+*.tmp
+*.bak

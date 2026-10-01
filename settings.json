@@ -1,0 +1,65 @@
+{
+  "player_username": "ItsReZNuM",
+  "dry_run": false,
+  "require_focus": true,
+  "send_method": "paste",
+  "chat_key": "t",
+  "send_cooldown": 3.0,
+  "post_open_chat_delay": 0.25,
+  "post_type_delay": 0.1,
+  "max_candidate_retries": 2,
+  "global_min_delay": 3.0,
+  "global_max_delay": 7.0,
+  "answer_ratio": 1,
+  "guess_number_mode": "random",
+  "auto_learn_words": true,
+  "auto_learn_min_length": 3,
+  "auto_learn_filter_random": true,
+  "stealth": {
+    "fake_attempts_min": 0,
+    "fake_attempts_max": 1,
+    "fake_attempt_cooldown": 3.0,
+    "typo_nearby_keys": true,
+    "typo_swap_case": true,
+    "typo_partial_word": false,
+    "typo_reversed_word": false,
+    "typo_missing_chars": false
+  },
+  "game_delays": {
+    "fill": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "scramble": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "reverse": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "math": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "type_letters": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "guess_number": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    },
+    "trivia": {
+      "min_delay": 3.0,
+      "max_delay": 7.0,
+      "enabled": true
+    }
+  }
+}

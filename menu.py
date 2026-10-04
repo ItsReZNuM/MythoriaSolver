@@ -4,6 +4,7 @@ Start / Settings / Exit with full configuration sub-menus.
 """
 import sys
 import os
+import time
 from typing import Optional, Callable
 
 from rich.console import Console
@@ -13,7 +14,7 @@ from rich import box
 from rich.text import Text
 from rich.columns import Columns
 
-from settings import Settings, GAME_TYPES, GAME_TYPE_LABELS, GameTypeDelay, StealthSettings
+from settings import Settings, GAME_TYPES, GAME_TYPE_LABELS, GameTypeDelay, StealthSettings, TabchiSettings
 
 console = Console(safe_box=True)
 
@@ -121,11 +122,12 @@ def show_settings_menu(settings: Settings):
         cat_table.add_row("4", "Answer Ratio", f"1 of every {settings.answer_ratio} games ({100/settings.answer_ratio:.0f}%)")
         cat_table.add_row("5", "Anti-Cheat (Fake Attempts)", f"Min: {settings.stealth.fake_attempts_min} | Max: {settings.stealth.fake_attempts_max} wrong attempts")
         cat_table.add_row("6", "Auto-Learning", f"{'ON' if settings.auto_learn_words else 'OFF'} | Filter Random: {'ON' if settings.auto_learn_filter_random else 'OFF'}")
-        cat_table.add_row("7", "View All Settings", "Show full config summary")
+        cat_table.add_row("7", "Tabchi / Auto-Advertiser", f"{'ENABLED' if settings.tabchi.enabled else 'DISABLED'} | {len(settings.tabchi.messages)} msgs | {settings.tabchi.min_interval_minutes:.1f}-{settings.tabchi.max_interval_minutes:.1f}m")
+        cat_table.add_row("8", "View All Settings", "Show full config summary")
         cat_table.add_row("0", "<< BACK", "Return to main menu")
 
         console.print(cat_table)
-        choice = _input_safe("\n[bold green]>> Select category [0-7]: [/bold green]", "0")
+        choice = _input_safe("\n[bold green]>> Select category [0-8]: [/bold green]", "0")
 
         if choice == "0":
             settings.save()
@@ -144,6 +146,8 @@ def show_settings_menu(settings: Settings):
         elif choice == "6":
             _settings_learning(settings)
         elif choice == "7":
+            _settings_tabchi(settings)
+        elif choice == "8":
             _show_full_config(settings)
 
 
@@ -344,6 +348,136 @@ def _settings_learning(settings: Settings):
     console.print("[green][+] Learning settings updated.[/green]\n")
 
 
+def _settings_tabchi(settings: Settings):
+    """Sub-menu for Tabchi / Auto-Advertiser configuration."""
+    tab = settings.tabchi
+    while True:
+        clear_screen()
+        console.print("[bold magenta]== TABCHI / AUTO-ADVERTISER SETTINGS ==[/bold magenta]\n")
+
+        status_color = "green" if tab.enabled else "red"
+        status_text = "ENABLED" if tab.enabled else "DISABLED"
+
+        info_table = Table(box=box.SIMPLE, show_header=False, expand=True)
+        info_table.add_column("Setting", style="bold cyan", width=25)
+        info_table.add_column("Value", style="white")
+
+        info_table.add_row("Status", f"[{status_color}]{status_text}[/{status_color}]")
+        interval_desc = (
+            f"{tab.min_interval_minutes:.1f} - {tab.max_interval_minutes:.1f} minutes (Randomized)"
+            if tab.randomize_interval
+            else f"{tab.min_interval_minutes:.1f} minutes (Fixed)"
+        )
+        info_table.add_row("Interval", interval_desc)
+        info_table.add_row("Message Order", tab.order.capitalize())
+        info_table.add_row("Anti-Duplicate Dot", "[green]ON[/green]" if tab.anti_duplicate_dot else "[red]OFF[/red]")
+        info_table.add_row("Total Messages", f"{len(tab.messages)} message(s)")
+
+        console.print(Panel(info_table, title="[bold]Current Tabchi Config[/bold]", border_style="magenta"))
+
+        menu_table = Table(box=box.ROUNDED, show_header=True, expand=True)
+        menu_table.add_column("#", style="bold cyan", width=4)
+        menu_table.add_column("Action", style="bold white")
+        menu_table.add_column("Details", style="dim")
+
+        menu_table.add_row("1", "Toggle Enabled/Disabled", f"Currently {status_text}")
+        menu_table.add_row("2", "Set Time Interval (Minutes)", f"Min: {tab.min_interval_minutes:.1f}m, Max: {tab.max_interval_minutes:.1f}m")
+        menu_table.add_row("3", "Toggle Randomized Interval", f"{'ON' if tab.randomize_interval else 'OFF'}")
+        menu_table.add_row("4", "List All Messages", f"View all {len(tab.messages)} messages")
+        menu_table.add_row("5", "Add New Message", "Add an advertisement text")
+        menu_table.add_row("6", "Remove a Message", "Delete message by its number")
+        menu_table.add_row("7", "Toggle Message Order", f"Currently: {tab.order} (cycle/random)")
+        menu_table.add_row("8", "Toggle Anti-Duplicate Dot", f"Send '.' before ad: {'ON' if tab.anti_duplicate_dot else 'OFF'}")
+        menu_table.add_row("0", "<< BACK", "Return to Settings menu")
+
+        console.print(menu_table)
+        choice = _input_safe("\n[bold green]>> Select option [0-8]: [/bold green]", "0")
+
+        if choice == "0":
+            return
+        elif choice == "1":
+            tab.enabled = not tab.enabled
+            console.print(f"[green][+] Tabchi {'enabled' if tab.enabled else 'disabled'}![/green]")
+            time.sleep(1)
+        elif choice == "2":
+            tab.min_interval_minutes = _input_float(
+                f"[cyan]Min Interval (minutes)[/cyan] [{tab.min_interval_minutes:.1f}]: ",
+                tab.min_interval_minutes, 0.1, 1440.0,
+            )
+            tab.max_interval_minutes = _input_float(
+                f"[cyan]Max Interval (minutes)[/cyan] [{tab.max_interval_minutes:.1f}]: ",
+                tab.max_interval_minutes, 0.1, 1440.0,
+            )
+            if tab.min_interval_minutes > tab.max_interval_minutes:
+                tab.min_interval_minutes, tab.max_interval_minutes = tab.max_interval_minutes, tab.min_interval_minutes
+            console.print(f"[green][+] Interval set: {tab.min_interval_minutes:.1f} - {tab.max_interval_minutes:.1f} minutes[/green]")
+            time.sleep(1)
+        elif choice == "3":
+            tab.randomize_interval = not tab.randomize_interval
+            console.print(f"[green][+] Randomize interval: {'ON' if tab.randomize_interval else 'OFF'}[/green]")
+            time.sleep(1)
+        elif choice == "4":
+            _list_tabchi_messages(tab)
+        elif choice == "5":
+            new_msg = _input_safe("[cyan]Enter new advertisement message: [/cyan]", "").strip()
+            if new_msg:
+                tab.messages.append(new_msg)
+                console.print(f"[green][+] Added message: '{new_msg}'[/green]")
+            else:
+                console.print("[yellow][!] Empty message not added.[/yellow]")
+            time.sleep(1)
+        elif choice == "6":
+            _remove_tabchi_message(tab)
+        elif choice == "7":
+            tab.order = "random" if tab.order == "cycle" else "cycle"
+            console.print(f"[green][+] Order set to: {tab.order}[/green]")
+            time.sleep(1)
+        elif choice == "8":
+            tab.anti_duplicate_dot = not tab.anti_duplicate_dot
+            console.print(f"[green][+] Anti-duplicate dot: {'ON' if tab.anti_duplicate_dot else 'OFF'}[/green]")
+            time.sleep(1)
+
+
+def _list_tabchi_messages(tab):
+    """Display list of all current Tabchi advertisement messages."""
+    console.print("\n[bold cyan]-- Tabchi Advertisement Messages --[/bold cyan]\n")
+    if not tab.messages:
+        console.print("[yellow]No advertisement messages configured yet.[/yellow]\n")
+    else:
+        msg_table = Table(box=box.ROUNDED, show_header=True, expand=True)
+        msg_table.add_column("#", style="bold cyan", width=4)
+        msg_table.add_column("Advertisement Message", style="bold white")
+
+        for idx, msg in enumerate(tab.messages, 1):
+            msg_table.add_row(str(idx), msg)
+
+        console.print(msg_table)
+    _input_safe("[dim]Press Enter to continue...[/dim]")
+
+
+def _remove_tabchi_message(tab):
+    """Remove a message from Tabchi messages list."""
+    if not tab.messages:
+        console.print("[yellow]No messages to delete.[/yellow]")
+        time.sleep(1)
+        return
+
+    _list_tabchi_messages(tab)
+    choice = _input_safe("[bold yellow]Enter message # to delete (0 to cancel): [/bold yellow]", "0")
+    try:
+        idx = int(choice)
+        if 1 <= idx <= len(tab.messages):
+            removed = tab.messages.pop(idx - 1)
+            console.print(f"[green][+] Removed message #{idx}: '{removed}'[/green]")
+        elif idx == 0:
+            console.print("[yellow]Cancelled.[/yellow]")
+        else:
+            console.print("[red]Invalid message number.[/red]")
+    except ValueError:
+        console.print("[red]Invalid input.[/red]")
+    time.sleep(1.2)
+
+
 def _show_full_config(settings: Settings):
     """Display all current settings in a readable format."""
     console.print("\n[bold magenta]== FULL CONFIGURATION ==[/bold magenta]\n")
@@ -412,6 +546,30 @@ def _show_full_config(settings: Settings):
     lr_table.add_row("Filter Random Strings", "[green]ON[/green]" if settings.auto_learn_filter_random else "[red]OFF[/red]")
 
     console.print(Panel(lr_table, title="[bold]Auto-Learning[/bold]", border_style="green"))
+
+    # Tabchi / Auto-Advertiser
+    tab = settings.tabchi
+    tab_table = Table(box=box.SIMPLE, show_header=False, expand=True)
+    tab_table.add_column("Setting", style="bold cyan", width=30)
+    tab_table.add_column("Value", style="white")
+
+    tab_table.add_row("Status", "[green]ENABLED[/green]" if tab.enabled else "[red]DISABLED[/red]")
+    interval_info = (
+        f"{tab.min_interval_minutes:.1f} - {tab.max_interval_minutes:.1f} minutes (Randomized)"
+        if tab.randomize_interval
+        else f"{tab.min_interval_minutes:.1f} minutes (Fixed)"
+    )
+    tab_table.add_row("Interval", interval_info)
+    tab_table.add_row("Order", tab.order.capitalize())
+    tab_table.add_row("Anti-Duplicate Dot", "[green]ON[/green]" if tab.anti_duplicate_dot else "[red]OFF[/red]")
+    tab_table.add_row("Total Messages", f"{len(tab.messages)} message(s)")
+    if tab.messages:
+        for idx, msg in enumerate(tab.messages[:3], 1):
+            tab_table.add_row(f"  Msg #{idx}", f"[dim]{msg}[/dim]")
+        if len(tab.messages) > 3:
+            tab_table.add_row("  ...", f"[dim]+{len(tab.messages) - 3} more message(s)[/dim]")
+
+    console.print(Panel(tab_table, title="[bold]Tabchi / Auto-Advertiser[/bold]", border_style="magenta"))
 
     _input_safe("\n[dim]Press Enter to go back...[/dim]")
 

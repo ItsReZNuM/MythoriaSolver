@@ -79,6 +79,11 @@ class MinecraftChatBot:
         self._detected_type: str = ""
         self._is_guessing_number: bool = False
 
+        # Tabchi / Auto-Advertiser
+        self._tabchi_index: int = 0
+        self._next_advert_time: float = 0.0
+        self._schedule_next_advert(initial=True)
+
     def print_banner(self):
         s = self.settings
         table = Table(box=box.ROUNDED, show_header=False, expand=True)
@@ -103,6 +108,18 @@ class MinecraftChatBot:
             if s.stealth.fake_attempts_max > 0
             else "[green]Disabled[/green]",
         )
+        if s.tabchi.enabled:
+            intv_desc = (
+                f"{s.tabchi.min_interval_minutes:.1f}-{s.tabchi.max_interval_minutes:.1f}m (Random)"
+                if s.tabchi.randomize_interval
+                else f"{s.tabchi.min_interval_minutes:.1f}m (Fixed)"
+            )
+            table.add_row(
+                "Tabchi Advertiser",
+                f"[bold green]ENABLED[/bold green] ({len(s.tabchi.messages)} msgs | Interval: {intv_desc})",
+            )
+        else:
+            table.add_row("Tabchi Advertiser", "[dim red]DISABLED[/dim red]")
         table.add_row(
             "Execution Mode",
             "[yellow]DRY-RUN (No typing)[/yellow]"
@@ -450,6 +467,97 @@ class MinecraftChatBot:
                     f"[dim][*] Eliminated #{guessed_num} (guessed by another player). {len(self._active_candidates)} unguessed remaining in pool.[/dim]"
                 )
 
+    def _calculate_next_advert_delay(self) -> float:
+        """Calculate delay in seconds until next advert from settings in minutes."""
+        tab = self.settings.tabchi
+        if not tab.enabled or not tab.messages:
+            return 0.0
+        min_m = min(tab.min_interval_minutes, tab.max_interval_minutes)
+        max_m = max(tab.min_interval_minutes, tab.max_interval_minutes)
+        if tab.randomize_interval:
+            minutes = random.uniform(min_m, max_m)
+        else:
+            minutes = min_m
+        return minutes * 60.0
+
+    def _schedule_next_advert(self, initial: bool = False):
+        """Schedule next auto-advertisement timestamp."""
+        tab = self.settings.tabchi
+        if not tab.enabled or not tab.messages:
+            self._next_advert_time = 0.0
+            return
+
+        delay_seconds = self._calculate_next_advert_delay()
+        self._next_advert_time = time.time() + delay_seconds
+        mins = delay_seconds / 60.0
+        if initial:
+            console.print(
+                f"[dim][*] Tabchi Advertiser active: First ad scheduled in {mins:.1f} minutes ({delay_seconds:.0f}s)[/dim]"
+            )
+        else:
+            console.print(
+                f"[dim][*] Next Tabchi ad scheduled in {mins:.1f} minutes ({delay_seconds:.0f}s)[/dim]"
+            )
+
+    def check_advertiser(self):
+        """Check and send scheduled auto-advertisements."""
+        tab = self.settings.tabchi
+        if not tab.enabled or not tab.messages:
+            return
+
+        now = time.time()
+        if self._next_advert_time <= 0:
+            self._schedule_next_advert()
+            return
+
+        if now < self._next_advert_time:
+            return
+
+        # PRIORITY: Never interrupt an ongoing Chat Game!
+        if (
+            self._active_question_event is not None
+            or self._pending_send is not None
+            or self._fake_queue
+        ):
+            # Postpone by 5 seconds to let the chat game conclude
+            self._next_advert_time = now + 5.0
+            return
+
+        # Enforce server message cooldown
+        if now - self.sender.last_send_time < self.sender.cooldown:
+            return
+
+        # Verify Minecraft focus if required
+        if self.settings.require_focus and not self.sender.is_minecraft_focused():
+            self._next_advert_time = now + 5.0
+            return
+
+        # Pick next message (cycle or random)
+        if tab.order == "random":
+            msg = random.choice(tab.messages)
+        else:
+            msg = tab.messages[self._tabchi_index % len(tab.messages)]
+            self._tabchi_index += 1
+
+        console.print(
+            f"\n[bold magenta][📢 TABCHI ADVERT][/bold magenta] Sending: [bold white]{msg}[/bold white]"
+        )
+
+        # Anti-duplicate dot feature (from original tab.py)
+        if tab.anti_duplicate_dot:
+            dot_sent = self.sender.send_chat_message(".")
+            if dot_sent:
+                time.sleep(tab.dot_delay_seconds)
+
+        sent = self.sender.send_chat_message(msg)
+        if sent:
+            console.print("[bold green][OK] Advert sent to chat successfully![/bold green]")
+        else:
+            console.print("[yellow][!] Could not send advert (focus or typing error).[/yellow]")
+
+        # Schedule next advert
+        self._schedule_next_advert()
+
     def on_game_ended(self, event: ChatGameEndEvent):
         console.print()
         duration_str = (
@@ -539,9 +647,10 @@ class MinecraftChatBot:
 
         try:
             for line in self.log_reader.stream_lines(start_at_end=not self.replay):
-                # Check pending sends and retry attempts on every iteration
+                # Check pending sends, retry attempts, and auto-advertiser on every iteration
                 self.check_pending_send()
                 self.check_candidate_retry()
+                self.check_advertiser()
 
                 if line:
                     event = self.parser.parse_line(line)

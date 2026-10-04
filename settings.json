@@ -25,6 +25,23 @@
     "typo_reversed_word": false,
     "typo_missing_chars": false
   },
+  "tabchi": {
+    "enabled": false,
+    "messages": [
+      "All view ah new item",
+      "ALLL View ah pale oak off",
+      "All ./ah view ItsReZNuM",
+      "All view my ah",
+      "All creaking heart ah",
+      "ah off khorde hamechi moft moft"
+    ],
+    "min_interval_minutes": 3.0,
+    "max_interval_minutes": 5.0,
+    "randomize_interval": true,
+    "order": "cycle",
+    "anti_duplicate_dot": true,
+    "dot_delay_seconds": 3.0
+  },
   "game_delays": {
     "fill": {
       "min_delay": 3.0,
@@ -52,8 +69,8 @@
       "enabled": true
     },
     "guess_number": {
-      "min_delay": 3.0,
-      "max_delay": 7.0,
+      "min_delay": 1.0,
+      "max_delay": 2.0,
       "enabled": true
     },
     "trivia": {

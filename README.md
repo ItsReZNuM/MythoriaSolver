@@ -25,6 +25,14 @@ It tails Minecraft's `latest.log`, identifies chat game announcements with zero 
   - **Continuous Guessing**: Keeps trying remaining unguessed numbers every cooldown interval until the game ends.
 - **Answer the Following (`TriviaSolver`)**: Pre-loaded with server-specific Q&A pairs from historical archives, featuring fuzzy-string matching and real-time self-learning.
 
+### 📢 Tabchi / Auto-Advertiser
+- **Custom Advertisement List**: Add, remove, and manage promotional or auction chat messages (`/ah view ...`) directly from the interactive menu.
+- **Minute-Based Intervals**: Fully configurable delays between advertisements in **minutes** (e.g. 3.0 to 5.0 minutes).
+- **Randomized Interval Range**: Option to randomize the time between advertisements to appear natural and evade automated spam detection.
+- **Cycle or Random Dispatch**: Rotate messages sequentially or pick random entries from the pool.
+- **Anti-Duplicate Dot Bypass**: Automatically sends a subtle dot `.` before duplicate advertisements (mirroring Minecraft anti-spam bypass techniques).
+- **Chat Game Priority**: Auto-advertiser automatically pauses whenever a Chat Game is detected, ensuring 100% priority for quiz answering.
+
 ### 🛡️ Anti-Cheat & Stealth Evasion
 - **Randomized Delays**: Configurable min/max delay per game type or globally.
 - **Human Typo Simulation**: Deliberately submits 0–2 plausible mistakes (keyboard-neighbor typos, dropped letters, lowercase initials) before the correct answer.
@@ -143,6 +151,12 @@ python main.py --log-path "C:\Path\To\.minecraft\logs\latest.log"
 | `global_max_delay` | `float` | `7.0` | Maximum delay before answering (seconds) |
 | `stealth.fake_attempts_max` | `int` | `2` | Max intentional wrong guesses sent first |
 | `auto_learn_words` | `bool` | `true` | Automatically adds server-announced answers to DB |
+| `tabchi.enabled` | `bool` | `false` | Enable / disable automated advertisement broadcasting |
+| `tabchi.min_interval_minutes` | `float` | `3.0` | Minimum interval between advertisements in minutes |
+| `tabchi.max_interval_minutes` | `float` | `5.0` | Maximum interval between advertisements in minutes |
+| `tabchi.randomize_interval` | `bool` | `true` | Randomize interval within [min, max] minutes |
+| `tabchi.order` | `string` | `"cycle"` | Message dispatch sequence (`"cycle"` or `"random"`) |
+| `tabchi.anti_duplicate_dot` | `bool` | `true` | Prepend dot message before repeating ads to bypass spam filter |
 
 ---
 

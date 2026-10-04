@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 BASE_DIR = Path(__file__).parent.resolve()
 SETTINGS_FILE = BASE_DIR / "settings.json"
@@ -17,6 +17,15 @@ GAME_TYPE_LABELS = {
     "guess_number": "Guess the Number",
     "trivia": "Answer the Following",
 }
+
+DEFAULT_TABCHI_MESSAGES = [
+    "All view ah new item",
+    "ALLL View ah pale oak off",
+    "All ./ah view ItsReZNuM",
+    "All view my ah",
+    "All creaking heart ah",
+    "ah off khorde hamechi moft moft",
+]
 
 
 @dataclass
@@ -41,6 +50,19 @@ class StealthSettings:
     typo_partial_word: bool = True    # Send only first part of the answer
     typo_reversed_word: bool = True   # Send a word reversed
     typo_missing_chars: bool = True   # Drop a few characters
+
+
+@dataclass
+class TabchiSettings:
+    """Auto-advertiser (تبچی) configuration."""
+    enabled: bool = False
+    messages: List[str] = field(default_factory=lambda: list(DEFAULT_TABCHI_MESSAGES))
+    min_interval_minutes: float = 3.0
+    max_interval_minutes: float = 5.0
+    randomize_interval: bool = True
+    order: str = "cycle"  # "cycle" or "random"
+    anti_duplicate_dot: bool = True  # Send a "." before the message to bypass duplicate filter
+    dot_delay_seconds: float = 3.0   # Cooldown delay after sending dot (seconds)
 
 
 @dataclass
@@ -75,6 +97,9 @@ class Settings:
     # Stealth / Anti-cheat
     stealth: StealthSettings = field(default_factory=StealthSettings)
 
+    # Tabchi / Auto-Advertiser
+    tabchi: TabchiSettings = field(default_factory=TabchiSettings)
+
     # Per-game-type delays
     game_delays: Dict[str, GameTypeDelay] = field(default_factory=dict)
 
@@ -86,6 +111,8 @@ class Settings:
         # Convert dicts back to dataclass instances if loaded from JSON
         if isinstance(self.stealth, dict):
             self.stealth = StealthSettings(**self.stealth)
+        if isinstance(self.tabchi, dict):
+            self.tabchi = TabchiSettings(**self.tabchi)
         for k, v in list(self.game_delays.items()):
             if isinstance(v, dict):
                 self.game_delays[k] = GameTypeDelay(**v)

@@ -23,7 +23,7 @@ class Config:
     # ----------------------------------------------------
     # Minecraft Interaction Settings
     # ----------------------------------------------------
-    PLAYER_USERNAME: str = "ItsReZNuM"
+    PLAYER_USERNAME: str = "Player"
     WINDOW_TITLE_KEYWORD: str = "Minecraft"
     REQUIRE_FOCUS: bool = True
     DRY_RUN: bool = False  # Set to True to log answers without physical keystrokes

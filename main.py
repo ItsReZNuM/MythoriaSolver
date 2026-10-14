@@ -46,7 +46,7 @@ console = Console(safe_box=True)
 class MinecraftChatBot:
     def __init__(self, settings: Settings, log_path: Optional[Path] = None, replay: bool = False):
         self.settings = settings
-        self.log_path = Path(log_path or config.DEFAULT_MINECRAFT_LOG)
+        self.log_path = Path(log_path) if log_path else self.settings.get_active_log_path()
         self.replay = replay
 
         self.game_counter = 0
@@ -90,6 +90,7 @@ class MinecraftChatBot:
         table.add_column("Key", style="bold cyan", width=22)
         table.add_column("Value", style="bold white")
 
+        table.add_row("Player Username", f"[bold green]{s.player_username}[/bold green]")
         table.add_row("Minecraft Log Path", str(self.log_path))
         table.add_row("Database Items", f"{len(self.db.all_items):,} verified names")
         table.add_row(
@@ -630,6 +631,7 @@ class MinecraftChatBot:
             winner=event.winner,
             duration=event.duration_seconds,
             actual_answer=event.answer,
+            player_username=self.settings.player_username,
         )
         if record and record.our_bot_won:
             console.print("[bold yellow][***] OUR BOT WON THE GAME! [***][/bold yellow]")

@@ -1,5 +1,6 @@
 {
-  "player_username": "ItsReZNuM",
+  "player_username": "Player",
+  "minecraft_log_path": "",
   "dry_run": false,
   "require_focus": true,
   "send_method": "paste",
@@ -29,14 +30,13 @@
     "enabled": false,
     "messages": [
       "All view ah new item",
-      "ALLL View ah pale oak off",
-      "All ./ah view ItsReZNuM",
+      "All ./ah view items",
       "All view my ah",
-      "All creaking heart ah",
-      "ah off khorde hamechi moft moft"
+      "ah off khorde hamechi moft moft",
+      "ALL new ah item check /ah"
     ],
-    "min_interval_minutes": 3.0,
-    "max_interval_minutes": 5.0,
+    "min_interval_minutes": 60.0,
+    "max_interval_minutes": 70.0,
     "randomize_interval": true,
     "order": "cycle",
     "anti_duplicate_dot": true,

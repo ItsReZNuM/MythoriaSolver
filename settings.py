@@ -21,7 +21,7 @@ GAME_TYPE_LABELS = {
 DEFAULT_TABCHI_MESSAGES = [
     "All view ah new item",
     "ALLL View ah pale oak off",
-    "All ./ah view ItsReZNuM",
+    "All ./ah view items",
     "All view my ah",
     "All creaking heart ah",
     "ah off khorde hamechi moft moft",
@@ -69,7 +69,8 @@ class TabchiSettings:
 class Settings:
     """All bot settings, persisted to settings.json."""
     # General
-    player_username: str = "ItsReZNuM"
+    player_username: str = "Player"
+    minecraft_log_path: str = ""      # Path to active Minecraft latest.log (empty = auto-detect)
     dry_run: bool = False
     require_focus: bool = True
     send_method: str = "paste"        # "paste" or "write"
@@ -131,6 +132,15 @@ class Settings:
         if gt in self.game_delays:
             return self.game_delays[gt].enabled
         return True
+
+    def get_active_log_path(self) -> Path:
+        """Resolve active Minecraft latest.log path."""
+        if self.minecraft_log_path:
+            p = Path(self.minecraft_log_path).expanduser().resolve()
+            if p.is_file():
+                return p
+        import os
+        return Path(os.path.expandvars(r"%APPDATA%\.minecraft\logs\latest.log"))
 
     def save(self, path: Path = None):
         """Save settings to JSON file."""

@@ -63,6 +63,7 @@ MythoriaSolver/
 │   └── minecraft_clean.db      # SQLite database (2,590+ verified entries)
 ├── minecraft/
 │   ├── chat_parser.py          # Regex parser for multi-line chat game events
+│   ├── log_finder.py           # Auto-detector & selector for multi-version Minecraft logs
 │   ├── log_reader.py           # Real-time non-blocking tail of latest.log
 │   └── sender.py               # Hardware scancode input simulator & focus checker
 ├── solver/
@@ -115,9 +116,10 @@ pip install -r requirements.txt
 python main.py
 ```
 Upon launching, the interactive menu allows you to:
-1. **START BOT**: Launch monitoring and answering.
-2. **SETTINGS**: Customize delays, stealth fakes, answer ratio, dry-run mode, and per-game-type settings.
-3. **EXIT**: Close the application.
+1. **START BOT**: Launch monitoring and answering on the active instance.
+2. **SELECT MC VERSION**: Scan PC for Minecraft installations (Vanilla, Modpacks, Phoenix, CurseForge, Prism) and pick which version to monitor.
+3. **SETTINGS**: Customize username, delays, bulk Tabchi ads, stealth fakes, and per-game-type settings.
+4. **EXIT**: Close the application.
 
 ### Command-Line Arguments
 You can also launch directly by skipping the menu:
@@ -141,6 +143,8 @@ python main.py --log-path "C:\Path\To\.minecraft\logs\latest.log"
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
+| `player_username` | `string` | `"Player"` | Your in-game username (used for stats & winner detection) |
+| `minecraft_log_path` | `string` | `""` | Path to active `latest.log` (empty = auto-detect) |
 | `dry_run` | `bool` | `false` | When true, logs answers without physical keystrokes |
 | `require_focus` | `bool` | `true` | Only types when Minecraft is in the foreground |
 | `send_method` | `string` | `"paste"` | Method to submit answer (`"paste"` or `"write"`) |

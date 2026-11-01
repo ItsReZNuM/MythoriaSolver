@@ -1,9 +1,18 @@
 import json
+import sys
+import shutil
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Dict, List
 
-BASE_DIR = Path(__file__).parent.resolve()
+# Support PyInstaller frozen bundles and persistent directory locations
+if getattr(sys, "frozen", False):
+    BASE_DIR = Path(sys.executable).parent.resolve()
+    BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", BASE_DIR)).resolve()
+else:
+    BASE_DIR = Path(__file__).parent.resolve()
+    BUNDLE_DIR = BASE_DIR
+
 SETTINGS_FILE = BASE_DIR / "settings.json"
 
 GAME_TYPES = ["fill", "scramble", "reverse", "math", "type_letters", "guess_number", "trivia"]
@@ -154,9 +163,16 @@ class Settings:
         """Load settings from JSON file, falling back to defaults."""
         load_path = path or SETTINGS_FILE
         if not load_path.exists():
-            s = cls()
-            s.save(load_path)
-            return s
+            bundle_settings = BUNDLE_DIR / "settings.json"
+            if bundle_settings.exists() and bundle_settings != load_path:
+                try:
+                    shutil.copy2(bundle_settings, load_path)
+                except Exception:
+                    pass
+            if not load_path.exists():
+                s = cls()
+                s.save(load_path)
+                return s
         try:
             with open(load_path, "r", encoding="utf-8") as f:
                 data = json.load(f)

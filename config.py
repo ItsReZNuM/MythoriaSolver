@@ -1,8 +1,18 @@
 import os
+import sys
 from pathlib import Path
 from dataclasses import dataclass
 
-BASE_DIR = Path(__file__).parent.resolve()
+# Support PyInstaller frozen bundles and persistent directory locations
+if getattr(sys, "frozen", False):
+    EXE_DIR = Path(sys.executable).parent.resolve()
+    BUNDLE_DIR = Path(getattr(sys, "_MEIPASS", EXE_DIR)).resolve()
+else:
+    EXE_DIR = Path(__file__).parent.resolve()
+    BUNDLE_DIR = EXE_DIR
+
+BASE_DIR = EXE_DIR
+
 
 @dataclass(frozen=True)
 class Config:
@@ -10,6 +20,8 @@ class Config:
     # File Paths
     # ----------------------------------------------------
     BASE_DIR: Path = BASE_DIR
+    BUNDLE_DIR: Path = BUNDLE_DIR
+    ASSETS_DIR: Path = BUNDLE_DIR / "assets"
     DB_PATH: Path = BASE_DIR / "database" / "minecraft_clean.db"
     COLLECTOR_DIR: Path = BASE_DIR / "collector"
     COLLECTOR_LOG_FILE: Path = COLLECTOR_DIR / "chat_games.jsonl"

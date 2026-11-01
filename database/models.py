@@ -1,9 +1,12 @@
+import sys
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 import sqlite3
 import re
 import threading
+from config import config
 
 
 @dataclass(frozen=True)
@@ -34,9 +37,19 @@ class DatabaseManager:
 
     def __init__(self, db_path: Optional[Path] = None):
         if db_path is None:
-            self.db_path = Path(__file__).parent / "minecraft_clean.db"
+            self.db_path = config.DB_PATH
         else:
             self.db_path = Path(db_path)
+
+        # In PyInstaller frozen environment, ensure database is initialized
+        if not self.db_path.exists():
+            bundle_db = config.BUNDLE_DIR / "database" / "minecraft_clean.db"
+            if bundle_db.exists() and bundle_db != self.db_path:
+                try:
+                    self.db_path.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(bundle_db, self.db_path)
+                except Exception:
+                    self.db_path = bundle_db
 
         self._items: List[MinecraftName] = []
         self._by_normalized: Dict[str, MinecraftName] = {}

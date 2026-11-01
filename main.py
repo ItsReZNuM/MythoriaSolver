@@ -7,6 +7,7 @@ Fixes applied:
   - Anti-cheat fake wrong answers before correct answer
   - Per-game-type delays from settings
   - Reason logging for all skip/no-answer decisions
+  - Event callback support for CustomTkinter GUI
 """
 import sys
 import time
@@ -14,7 +15,7 @@ import random
 import argparse
 import re
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Callable
 
 # Ensure standard UTF-8 stream output on Windows terminals
 if sys.platform == "win32":
@@ -44,10 +45,17 @@ console = Console(safe_box=True)
 
 
 class MinecraftChatBot:
-    def __init__(self, settings: Settings, log_path: Optional[Path] = None, replay: bool = False):
+    def __init__(
+        self,
+        settings: Settings,
+        log_path: Optional[Path] = None,
+        replay: bool = False,
+        event_callback: Optional[Callable[[str, Dict[str, Any]], None]] = None,
+    ):
         self.settings = settings
         self.log_path = Path(log_path) if log_path else self.settings.get_active_log_path()
         self.replay = replay
+        self.event_callback = event_callback
 
         self.game_counter = 0
 
@@ -83,6 +91,19 @@ class MinecraftChatBot:
         self._tabchi_index: int = 0
         self._next_advert_time: float = 0.0
         self._schedule_next_advert(initial=True)
+
+    def _emit(self, event_type: str, **kwargs):
+        """Emit real-time events to GUI if callback registered."""
+        if self.event_callback:
+            try:
+                self.event_callback(event_type, kwargs)
+            except Exception:
+                pass
+
+    def stop(self):
+        """Signal the log reader and main loop to terminate."""
+        if hasattr(self, "log_reader") and self.log_reader:
+            self.log_reader.stop()
 
     def print_banner(self):
         s = self.settings
@@ -173,12 +194,21 @@ class MinecraftChatBot:
         detected_type = self.router.detect_type(event.game_type, event.clean_question)
         self._detected_type = detected_type
 
+        self._emit(
+            "question",
+            game_number=self.game_counter,
+            timestamp=event.timestamp,
+            raw_type=event.game_type,
+            clean_question=event.clean_question,
+            detected_type=detected_type,
+        )
+
         # ── Check if game type is disabled ──
         if not self.settings.is_game_type_enabled(detected_type):
-            console.print(
-                f"[yellow][SKIPPED] Reason: Game type '{GAME_TYPE_LABELS.get(detected_type, detected_type)}' "
-                f"is DISABLED in settings.[/yellow]"
+            reason_msg = (
+                f"Game type '{GAME_TYPE_LABELS.get(detected_type, detected_type)}' is DISABLED in settings."
             )
+            console.print(f"[yellow][SKIPPED] Reason: {reason_msg}[/yellow]")
             self._game_skipped = True
             self._active_candidates = []
             self._pending_send = None
@@ -189,6 +219,7 @@ class MinecraftChatBot:
                 candidates=[],
                 answer_sent=None,
             )
+            self._emit("skipped", game_number=self.game_counter, reason=reason_msg)
             return
 
         # ── Solve ──
@@ -210,6 +241,12 @@ class MinecraftChatBot:
                 candidates=[],
                 answer_sent=None,
             )
+            self._emit(
+                "no_candidates",
+                game_number=self.game_counter,
+                detected_type=detected_type,
+                solve_time_ms=solve_time_ms,
+            )
             return
 
         # Display Candidates
@@ -230,15 +267,21 @@ class MinecraftChatBot:
         console.print(cand_table)
         console.print(f"[dim][*] Solved in {solve_time_ms:.2f} ms[/dim]")
 
+        self._emit(
+            "candidates",
+            game_number=self.game_counter,
+            candidates=candidates,
+            solve_time_ms=solve_time_ms,
+            detected_type=detected_type,
+        )
+
         # ── Skip Ratio Logic ──
         cycle_pos = ((self.game_counter - 1) % self.settings.answer_ratio) + 1
         if self.settings.answer_ratio > 1 and cycle_pos != 1:
-            console.print(
-                f"[yellow][SKIPPED] Reason: Answer ratio ({cycle_pos}/{self.settings.answer_ratio}). "
-                f"Only answering game 1 of every {self.settings.answer_ratio}.[/yellow]"
-            )
+            skip_msg = f"Answer ratio ({cycle_pos}/{self.settings.answer_ratio}). Only answering 1 of every {self.settings.answer_ratio}."
+            console.print(f"[yellow][SKIPPED] Reason: {skip_msg}[/yellow]")
             self._game_skipped = True
-            # BUG FIX: Clear candidates so retry doesn't fire
+            # Clear candidates so retry doesn't fire
             self._active_candidates = []
             self._pending_send = None
             self.collector.start_session(
@@ -248,6 +291,7 @@ class MinecraftChatBot:
                 candidates=candidates,
                 answer_sent=None,
             )
+            self._emit("skipped", game_number=self.game_counter, reason=skip_msg)
             return
 
         # ── Prepare answer ──
@@ -322,11 +366,13 @@ class MinecraftChatBot:
             console.print(
                 f"[bold green][OK] Typed and submitted:[/bold green] [bold white]{top_answer}[/bold white]"
             )
+            self._emit("answer_sent", answer=top_answer, delay=0.0, is_retry=False)
         else:
             if not self.sender.is_minecraft_focused() and self.settings.require_focus:
                 console.print(
                     "[yellow][!] Not sent: Minecraft window not in foreground.[/yellow]"
                 )
+                self._emit("warn", text="Not sent: Minecraft window not in foreground.")
 
     def check_pending_send(self):
         """Execute delayed answer / fake attempts if delay elapsed and game is still active."""
@@ -351,6 +397,12 @@ class MinecraftChatBot:
                         console.print(
                             f"[red][FAKE #{fake_idx+1}] Sent wrong answer:[/red] [dim]{fake_msg}[/dim]"
                         )
+                        self._emit(
+                            "fake_sent",
+                            fake_msg=fake_msg,
+                            index=fake_idx + 1,
+                            total=len(self._fake_queue),
+                        )
                     self._pending_send["fake_index"] = fake_idx + 1
 
                     # If all fakes sent, recalculate correct answer target time
@@ -363,6 +415,7 @@ class MinecraftChatBot:
                     console.print(
                         "[yellow][!] Game ended during fake attempts. Cancelled.[/yellow]"
                     )
+                    self._emit("warn", text="Game ended during fake attempts. Cancelled.")
                     self._pending_send = None
                     self._fake_queue = []
                     return
@@ -390,19 +443,26 @@ class MinecraftChatBot:
                         f"[bold green][OK] Typed and submitted ({item['delay']:.2f}s delay):[/bold green] "
                         f"[bold white]{top_ans}[/bold white]"
                     )
+                    self._emit(
+                        "answer_sent",
+                        answer=top_ans,
+                        delay=item["delay"],
+                        is_retry=False,
+                    )
                 else:
                     if not self.sender.is_minecraft_focused() and self.settings.require_focus:
                         console.print(
                             "[yellow][!] Not sent: Minecraft window not in foreground.[/yellow]"
                         )
+                        self._emit("warn", text="Not sent: Minecraft window not in foreground.")
             else:
                 console.print(
                     "[yellow][!] Reason: Game ended before stealth delay elapsed. Correct answer cancelled.[/yellow]"
                 )
+                self._emit("warn", text="Game ended before stealth delay elapsed. Correct answer cancelled.")
 
     def check_candidate_retry(self):
         """Send next candidate if the game is still active and cooldown elapsed."""
-        # BUG FIX: Skip if game was skipped by ratio or disabled
         if self._game_skipped:
             return
 
@@ -433,10 +493,12 @@ class MinecraftChatBot:
                     console.print(
                         f"[bold green][OK] Typed number guess:[/bold green] [bold white]{next_answer}[/bold white]"
                     )
+                    self._emit("number_guessed", number=next_answer, remaining=len(self._active_candidates))
                 else:
                     console.print(
                         f"[bold green][OK] Typed candidate retry:[/bold green] [bold white]{next_answer}[/bold white]"
                     )
+                    self._emit("answer_sent", answer=next_answer, delay=0.0, is_retry=True)
 
     def _handle_other_player_guess(self, raw_line: str):
         """When in 'guess_number' game, detect other players' guesses and eliminate them from candidate pool."""
@@ -520,7 +582,6 @@ class MinecraftChatBot:
             or self._pending_send is not None
             or self._fake_queue
         ):
-            # Postpone by 5 seconds to let the chat game conclude
             self._next_advert_time = now + 5.0
             return
 
@@ -553,6 +614,7 @@ class MinecraftChatBot:
         sent = self.sender.send_chat_message(msg)
         if sent:
             console.print("[bold green][OK] Advert sent to chat successfully![/bold green]")
+            self._emit("advert_sent", message=msg)
         else:
             console.print("[yellow][!] Could not send advert (focus or typing error).[/yellow]")
 
@@ -599,8 +661,13 @@ class MinecraftChatBot:
                     f"[bold green][+ LEARNED TRIVIA][/bold green] Saved Q&A: "
                     f"'{self._active_question_event.clean_question}' -> '{event.answer}'"
                 )
+                self._emit(
+                    "learned_trivia",
+                    question=self._active_question_event.clean_question,
+                    answer=event.answer,
+                )
 
-            # 2. Self-learning for words/items/blocks (with improved filters)
+            # 2. Self-learning for words/items/blocks
             elif self.settings.auto_learn_words:
                 answer_text = event.answer.strip()
                 skip_reason = None
@@ -612,7 +679,6 @@ class MinecraftChatBot:
                 elif len(answer_text) < self.settings.auto_learn_min_length:
                     skip_reason = f"too short ({len(answer_text)} < {self.settings.auto_learn_min_length})"
                 elif self.settings.auto_learn_filter_random and looks_like_random_string(answer_text):
-                    # BUG FIX: Don't learn random strings like 'OnpjAm', '84H2heqtC'
                     skip_reason = f"looks like random string ('{answer_text}')"
 
                 if skip_reason:
@@ -626,6 +692,7 @@ class MinecraftChatBot:
                             f"[bold green][+ LEARNED NEW WORD][/bold green] Added "
                             f"'[bold white]{answer_text}[/bold white]' to database!"
                         )
+                        self._emit("learned_word", word=answer_text)
 
         record = self.collector.complete_session(
             winner=event.winner,
@@ -636,6 +703,15 @@ class MinecraftChatBot:
         if record and record.our_bot_won:
             console.print("[bold yellow][***] OUR BOT WON THE GAME! [***][/bold yellow]")
 
+        self._emit(
+            "game_ended",
+            winner=event.winner,
+            duration=event.duration_seconds,
+            answer=event.answer,
+            timeout=event.timeout,
+            our_won=record.our_bot_won if record else False,
+        )
+
         self._active_question_event = None
         self._active_candidates = []
         self._game_skipped = False
@@ -643,13 +719,13 @@ class MinecraftChatBot:
 
     def run(self):
         self.print_banner()
+        self._emit("started", log_path=str(self.log_path), replay=self.replay)
         console.print(
             "\n[bold green][*] Monitoring chat games... Press Ctrl+C to exit.[/bold green]\n"
         )
 
         try:
             for line in self.log_reader.stream_lines(start_at_end=not self.replay):
-                # Check pending sends, retry attempts, and auto-advertiser on every iteration
                 self.check_pending_send()
                 self.check_candidate_retry()
                 self.check_advertiser()
@@ -668,11 +744,19 @@ class MinecraftChatBot:
 
         except KeyboardInterrupt:
             console.print("\n[yellow]Stopping Minecraft Chat Bot... Goodbye![/yellow]")
-            self.log_reader.stop()
+            self.stop()
+        finally:
+            self._emit("stopped")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Minecraft SMP Chat Game Bot")
+    parser = argparse.ArgumentParser(description="MythoriaSolver - Minecraft SMP Chat Bot")
+    parser.add_argument(
+        "--cli", action="store_true", help="Launch in terminal CLI / TUI mode"
+    )
+    parser.add_argument(
+        "--gui", action="store_true", help="Launch in modern CustomTkinter GUI mode (default)"
+    )
     parser.add_argument(
         "--replay", action="store_true", help="Replay historical log file"
     )
@@ -680,7 +764,7 @@ def main():
         "--log-path", type=str, default=None, help="Custom Minecraft latest.log path"
     )
     parser.add_argument(
-        "--no-menu", action="store_true", help="Skip interactive startup menu"
+        "--no-menu", action="store_true", help="Skip interactive startup menu in CLI mode"
     )
 
     args = parser.parse_args()
@@ -688,20 +772,26 @@ def main():
     # Load persistent settings
     settings = Settings.load()
 
-    # Show game-style menu unless skipped
-    if not args.no_menu and not args.replay and sys.stdin.isatty():
-        action = run_menu(settings)
-        if action == "exit":
-            return
-    else:
-        console.print("[dim]Skipping menu (--no-menu or replay mode).[/dim]")
+    # If CLI mode requested or replaying in terminal:
+    if args.cli or args.replay:
+        if not args.no_menu and not args.replay and sys.stdin.isatty():
+            action = run_menu(settings)
+            if action == "exit":
+                return
+        else:
+            console.print("[dim]Skipping menu (--no-menu or replay mode).[/dim]")
 
-    bot = MinecraftChatBot(
-        settings=settings,
-        log_path=Path(args.log_path) if args.log_path else None,
-        replay=args.replay,
-    )
-    bot.run()
+        bot = MinecraftChatBot(
+            settings=settings,
+            log_path=Path(args.log_path) if args.log_path else None,
+            replay=args.replay,
+        )
+        bot.run()
+        return
+
+    # Default to Modern CustomTkinter GUI
+    from gui import launch_gui
+    launch_gui()
 
 
 if __name__ == "__main__":

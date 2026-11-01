@@ -3,11 +3,44 @@
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-lightgrey.svg)]()
 [![Minecraft](https://img.shields.io/badge/Minecraft-Java%20Edition-green.svg)]()
+[![CustomTkinter](https://img.shields.io/badge/GUI-CustomTkinter-blueviolet.svg)]()
 [![License](https://img.shields.io/badge/License-MIT-orange.svg)]()
 
 **MythoriaSolver** is a high-performance, intelligent automation bot designed to automatically detect, solve, and answer **Chat Games** on Minecraft Java Edition SMP servers (Fabric, Forge, Vanilla, TLauncher) in real-time.
 
 It tails Minecraft's `latest.log`, identifies chat game announcements with zero memory lag, dispatches the puzzle to specialized solvers, and simulates natural human keyboard inputs directly into the Minecraft chat with advanced anti-cheat evasion.
+
+Now featured with a **Modern Dark CustomTkinter Desktop GUI** styled with **JetBrains Mono** typography and crisp vector icons.
+
+---
+
+## 🖥️ Modern Dark GUI & 6 Dedicated Tabs
+
+MythoriaSolver provides a complete, modern graphical interface built with `customtkinter`:
+
+1. **Dashboard & Live Telemetry**:
+   - Real-time terminal log viewer with syntax-highlighted events (Questions, Solvers, Typed answers, Winners).
+   - Live Session Counter Cards: Games Detected, Games Won, Accuracy Rate, Tabchi Ads Dispatched.
+   - Master Start/Stop Bot controls and log cleaner.
+2. **General & Minecraft Configuration**:
+   - In-game player identity and username tracking.
+   - Active log path selector with file browser and **Auto-Detector** for all installed Minecraft clients.
+   - Input simulation controls: Dry-Run mode, Require Focus, Send Method (`paste` / `write`), Chat Key, and Cooldown timings.
+   - Answer ratio controls (1 of every $N$ games) and Guess Number strategy.
+3. **Solvers & Delays**:
+   - Global fallback response delays.
+   - Individual enable/disable toggles and customizable min/max response delays for each of the 7 game types.
+   - Self-learning engine toggles (min word length, random anti-bot string filter).
+4. **Stealth & Anti-Cheat Evasion**:
+   - Human typo simulation: Deliberately submits 0–2 plausible mistakes before the correct answer.
+   - Configurable mistake patterns: QWERTY keyboard neighbor typos, swapped initial case, partial words, reversed words, dropped letters.
+5. **Tabchi / Auto-Advertiser**:
+   - Autonomous periodic promotional broadcasting (e.g. `/ah view ...`).
+   - Minute-based randomized intervals, cycle vs random message dispatch, and anti-duplicate dot (`.`) bypass.
+   - Interactive message manager (Add, Delete, Reset to defaults).
+6. **Sandbox & Historical Analytics**:
+   - Direct manual puzzle solver playground: test gap fills, scrambles, or math expressions instantly.
+   - Persistent database statistics (2,590+ verified entries) and all-time win-rate metrics.
 
 ---
 
@@ -26,7 +59,7 @@ It tails Minecraft's `latest.log`, identifies chat game announcements with zero 
 - **Answer the Following (`TriviaSolver`)**: Pre-loaded with server-specific Q&A pairs from historical archives, featuring fuzzy-string matching and real-time self-learning.
 
 ### 📢 Tabchi / Auto-Advertiser
-- **Custom Advertisement List**: Add, remove, and manage promotional or auction chat messages (`/ah view ...`) directly from the interactive menu.
+- **Custom Advertisement List**: Add, remove, and manage promotional or auction chat messages (`/ah view ...`) directly from the GUI.
 - **Minute-Based Intervals**: Fully configurable delays between advertisements in **minutes** (e.g. 3.0 to 5.0 minutes).
 - **Randomized Interval Range**: Option to randomize the time between advertisements to appear natural and evade automated spam detection.
 - **Cycle or Random Dispatch**: Rotate messages sequentially or pick random entries from the pool.
@@ -44,16 +77,16 @@ It tails Minecraft's `latest.log`, identifies chat game announcements with zero 
 - Built with Windows `keybd_event` combining **Virtual-Key Codes** and **Hardware Scan Codes** (`SCAN_T = 0x14`, `SCAN_RETURN = 0x1C`).
 - **100% immune to Windows keyboard layout**: Works identically whether your active system keyboard language is English, Persian, Arabic, or any other layout.
 
-### 🎮 Game-Style Interactive Menu
-- Navigable Rich TUI menu: `Start` / `Settings` / `Exit`.
-- All settings are saved automatically to `settings.json` across sessions.
-
 ---
 
 ## 📁 Project Structure
 
 ```text
 MythoriaSolver/
+├── assets/
+│   ├── icons/                  # High-resolution antialiased vector icons (PNG)
+│   ├── app_icon.ico            # Windows application icon
+│   └── app_icon.png            # Window brand graphic
 ├── collector/
 │   ├── chat_game_collector.py  # Session tracking & win-rate metrics
 │   └── trivia_cache.json       # Pre-loaded server trivia Q&A database
@@ -75,12 +108,14 @@ MythoriaSolver/
 │   ├── scramble_solver.py      # Sorted-letter anagram solver
 │   ├── trivia_solver.py        # Trivia Q&A fuzzy solver
 │   └── test_*.py               # Comprehensive unit tests for all solvers
-├── config.py                   # Static configuration and defaults
+├── config.py                   # PyInstaller bundle & persistent path configuration
 ├── settings.py                 # Mutable, persistent configuration manager
 ├── settings.json               # Saved user configuration
 ├── stealth.py                  # Typo generator and anti-cheat mechanics
+├── gui.py                      # Modern CustomTkinter Graphical User Interface
 ├── menu.py                     # Interactive Rich TUI menu
-├── main.py                     # Main application entry point
+├── main.py                     # Main application entry point (GUI / CLI)
+├── MythoriaSolver.spec         # PyInstaller standalone build specification
 ├── requirements.txt            # Python dependencies
 └── README.md
 ```
@@ -111,27 +146,38 @@ pip install -r requirements.txt
 
 ## 🎯 Usage
 
-### Start the Bot (with Interactive Menu)
+### 1. Standalone Executable (No Python Required)
+Run the compiled standalone executable directly:
+```powershell
+.\dist\MythoriaSolver.exe
+```
+
+### 2. Launch GUI (Python)
+Launch the modern CustomTkinter GUI directly:
 ```powershell
 python main.py
 ```
-Upon launching, the interactive menu allows you to:
-1. **START BOT**: Launch monitoring and answering on the active instance.
-2. **SELECT MC VERSION**: Scan PC for Minecraft installations (Vanilla, Modpacks, Phoenix, CurseForge, Prism) and pick which version to monitor.
-3. **SETTINGS**: Customize username, delays, bulk Tabchi ads, stealth fakes, and per-game-type settings.
-4. **EXIT**: Close the application.
+Or:
+```powershell
+python gui.py
+```
+
+### 3. Launch CLI Mode
+If you prefer running in the terminal with the Rich TUI menu:
+```powershell
+python main.py --cli
+```
 
 ### Command-Line Arguments
-You can also launch directly by skipping the menu:
 ```powershell
-# Run in Dry-Run mode (solves and logs, without typing into Minecraft)
-python main.py --dry-run
-
-# Run without opening the interactive menu
-python main.py --no-menu
+# Run in CLI mode
+python main.py --cli
 
 # Replay historical latest.log to test solvers against past games
 python main.py --replay
+
+# Run without opening the interactive startup menu in CLI
+python main.py --cli --no-menu
 
 # Specify a custom Minecraft latest.log path
 python main.py --log-path "C:\Path\To\.minecraft\logs\latest.log"
@@ -139,28 +185,13 @@ python main.py --log-path "C:\Path\To\.minecraft\logs\latest.log"
 
 ---
 
-## ⚙️ Configuration Reference (`settings.json`)
+## 📦 Building the Standalone `.exe`
 
-| Setting | Type | Default | Description |
-|---|---|---|---|
-| `player_username` | `string` | `"Player"` | Your in-game username (used for stats & winner detection) |
-| `minecraft_log_path` | `string` | `""` | Path to active `latest.log` (empty = auto-detect) |
-| `dry_run` | `bool` | `false` | When true, logs answers without physical keystrokes |
-| `require_focus` | `bool` | `true` | Only types when Minecraft is in the foreground |
-| `send_method` | `string` | `"paste"` | Method to submit answer (`"paste"` or `"write"`) |
-| `send_cooldown` | `float` | `3.0` | Minimum seconds between chat messages |
-| `post_open_chat_delay` | `float` | `0.35` | Delay after pressing 'T' before typing |
-| `answer_ratio` | `int` | `1` | Answer 1 out of every $N$ games ($1$ = answer all) |
-| `global_min_delay` | `float` | `3.0` | Minimum delay before answering (seconds) |
-| `global_max_delay` | `float` | `7.0` | Maximum delay before answering (seconds) |
-| `stealth.fake_attempts_max` | `int` | `2` | Max intentional wrong guesses sent first |
-| `auto_learn_words` | `bool` | `true` | Automatically adds server-announced answers to DB |
-| `tabchi.enabled` | `bool` | `false` | Enable / disable automated advertisement broadcasting |
-| `tabchi.min_interval_minutes` | `float` | `3.0` | Minimum interval between advertisements in minutes |
-| `tabchi.max_interval_minutes` | `float` | `5.0` | Maximum interval between advertisements in minutes |
-| `tabchi.randomize_interval` | `bool` | `true` | Randomize interval within [min, max] minutes |
-| `tabchi.order` | `string` | `"cycle"` | Message dispatch sequence (`"cycle"` or `"random"`) |
-| `tabchi.anti_duplicate_dot` | `bool` | `true` | Prepend dot message before repeating ads to bypass spam filter |
+To recompile the standalone `.exe` using PyInstaller:
+```powershell
+pyinstaller --noconfirm MythoriaSolver.spec
+```
+The output executable will be created in `dist/MythoriaSolver.exe`.
 
 ---
 

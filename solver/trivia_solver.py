@@ -1,4 +1,5 @@
 import json
+import shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from config import config
@@ -21,6 +22,15 @@ class TriviaSolver:
         self.load_cache()
 
     def load_cache(self) -> None:
+        if self.cache_file and not self.cache_file.exists():
+            bundle_cache = config.BUNDLE_DIR / "collector" / "trivia_cache.json"
+            if bundle_cache.exists() and bundle_cache != self.cache_file:
+                try:
+                    self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(bundle_cache, self.cache_file)
+                except Exception:
+                    self.cache_file = bundle_cache
+
         if self.cache_file and self.cache_file.exists():
             try:
                 with open(self.cache_file, "r", encoding="utf-8") as f:
@@ -49,28 +59,19 @@ class TriviaSolver:
         # 1. Exact match (case-insensitive)
         for q, a in self.qa_data.items():
             if q.lower() == clean_q.lower():
-                return [{"answer": a, "score": 100.0, "type": "trivia_exact"}]
+                return [{"answer": a, "score": 100.0, "solver": "trivia_exact"}]
 
         # 2. Fuzzy match
-        if fuzz:
-            best_q = None
-            best_ratio = 0.0
-            for q in self.qa_data.keys():
+        if fuzz is not None:
+            matches = []
+            for q, a in self.qa_data.items():
                 ratio = fuzz.ratio(clean_q.lower(), q.lower())
-                if ratio > best_ratio:
-                    best_ratio = ratio
-                    best_q = q
-
-            if best_q and best_ratio >= 85.0:
-                return [
-                    {
-                        "answer": self.qa_data[best_q],
-                        "score": round(best_ratio, 1),
-                        "type": "trivia_fuzzy",
-                    }
-                ]
+                if ratio >= 80.0:
+                    matches.append((ratio, a))
+            matches.sort(key=lambda x: x[0], reverse=True)
+            return [
+                {"answer": a, "score": float(score), "solver": "trivia_fuzzy"}
+                for score, a in matches[:limit]
+            ]
 
         return []
-
-    def close(self):
-        pass

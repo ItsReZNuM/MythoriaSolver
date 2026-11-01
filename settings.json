@@ -1,6 +1,6 @@
 {
-  "player_username": "Player",
-  "minecraft_log_path": "",
+  "player_username": "ItsReZNuM",
+  "minecraft_log_path": "C:\\Users\\ItsReZNuM\\AppData\\Roaming\\.minecraft\\logs\\latest.log",
   "dry_run": false,
   "require_focus": true,
   "send_method": "paste",
@@ -10,7 +10,7 @@
   "post_type_delay": 0.1,
   "max_candidate_retries": 2,
   "global_min_delay": 3.0,
-  "global_max_delay": 7.0,
+  "global_max_delay": 5.0,
   "answer_ratio": 1,
   "guess_number_mode": "random",
   "auto_learn_words": true,
@@ -19,15 +19,15 @@
   "stealth": {
     "fake_attempts_min": 0,
     "fake_attempts_max": 1,
-    "fake_attempt_cooldown": 3.0,
+    "fake_attempt_cooldown": 1.0,
     "typo_nearby_keys": true,
-    "typo_swap_case": true,
+    "typo_swap_case": false,
     "typo_partial_word": false,
     "typo_reversed_word": false,
-    "typo_missing_chars": false
+    "typo_missing_chars": true
   },
   "tabchi": {
-    "enabled": false,
+    "enabled": true,
     "messages": [
       "All view ah new item",
       "All ./ah view items",
@@ -35,8 +35,8 @@
       "ah off khorde hamechi moft moft",
       "ALL new ah item check /ah"
     ],
-    "min_interval_minutes": 60.0,
-    "max_interval_minutes": 70.0,
+    "min_interval_minutes": 5.0,
+    "max_interval_minutes": 10.0,
     "randomize_interval": true,
     "order": "cycle",
     "anti_duplicate_dot": true,

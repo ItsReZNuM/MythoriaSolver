@@ -60,8 +60,19 @@ class MythoriaGUI(ctk.CTk):
     def __init__(self):
         super().__init__()
 
+        # Hide window off-screen during widget hierarchy construction
+        # to eliminate startup flickering, layout pop-in, and black canvas flashes
+        self.withdraw()
+
         self.title("MythoriaSolver ⚡ High-Performance SMP Chat Game Bot")
-        self.geometry("1100x780")
+
+        # Center the window on screen
+        win_w, win_h = 1100, 780
+        sw = self.winfo_screenwidth()
+        sh = self.winfo_screenheight()
+        pos_x = max(0, (sw - win_w) // 2)
+        pos_y = max(0, (sh - win_h) // 2)
+        self.geometry(f"{win_w}x{win_h}+{pos_x}+{pos_y}")
         self.minsize(980, 680)
 
         # Set Window Icon if present
@@ -117,6 +128,10 @@ class MythoriaGUI(ctk.CTk):
 
         # Start Event Queue Poller
         self.after(50, self._process_event_queue)
+
+        # Force off-screen layout completion and smoothly reveal window
+        self.update_idletasks()
+        self.after(20, self.deiconify)
 
     # ── Icon Loader ──────────────────────────────────────────────────────────
     def _load_icons(self):
@@ -293,9 +308,11 @@ class MythoriaGUI(ctk.CTk):
         self._build_tab_tabchi()
         self._build_tab_sandbox()
 
-        # Mount ALL frames into the grid container once so they stay pre-rendered
-        for frame in self.tab_frames.values():
+        # Initialize grid geometry for all tab views, keeping inactive tabs unmapped
+        for tid, frame in self.tab_frames.items():
             frame.grid(row=0, column=0, sticky="nsew")
+            if tid != "dashboard":
+                frame.grid_remove()
 
         # Select initial tab
         self.current_tab = "dashboard"
@@ -366,10 +383,14 @@ class MythoriaGUI(ctk.CTk):
                     image=self.get_icon(icon_key)
                 )
 
-        # Instant 0ms visual switch without unmapping/re-rendering widgets!
-        target_frame = self.tab_frames.get(tab_id)
-        if target_frame:
-            target_frame.tkraise()
+        # Instant 0ms visual switch: map target frame and unmap others cleanly
+        for tid, frame in self.tab_frames.items():
+            if tid == tab_id:
+                frame.grid()
+                actual_widget = getattr(frame, "_parent_frame", frame)
+                actual_widget.tkraise()
+            else:
+                frame.grid_remove()
 
         # Update page title & description
         titles = {

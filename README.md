@@ -197,10 +197,25 @@ The output executable will be created in `dist/MythoriaSolver.exe`.
 
 ## 🧪 Running Unit Tests
 
-Run the test suite to verify all solvers:
+Run the comprehensive pytest suite to verify all solvers, database models, parser, stealth, tabchi, settings, and modular GUI components:
 ```powershell
-python -m unittest discover -s solver -p "test_*.py" -v
+pytest tests/ -v
 ```
+
+---
+
+## 📚 Comprehensive Documentation (Agent & Architecture Guides)
+
+For developers and AI agents inspecting or extending MythoriaSolver, dedicated deep-dive guides are available in the [`docs/`](file:///e:/Projects/MythoriaSolver/docs) directory:
+
+- [**System Architecture & Concurrency Model**](file:///e:/Projects/MythoriaSolver/docs/ARCHITECTURE.md): Multi-threading model, component data flow, and file layout.
+- [**Solvers & Heuristics Engine**](file:///e:/Projects/MythoriaSolver/docs/SOLVERS.md): Mathematical AST evaluation, anagram signature hashing, trivia fuzzy matching, and self-learning.
+- [**Minecraft Integration & Input Pipeline**](file:///e:/Projects/MythoriaSolver/docs/MINECRAFT.md): Log tailing, color code stripping, cross-launcher auto-detection, and Win32 hardware typing.
+- [**Stealth & Anti-Cheat Evasion**](file:///e:/Projects/MythoriaSolver/docs/STEALTH.md): QWERTY neighbor key matrix, fake mistake planning, and anti-honeypot noise filter.
+- [**Tabchi / Auto-Advertiser Engine**](file:///e:/Projects/MythoriaSolver/docs/TABCHI.md): Autonomous auction broadcasting, scheduling loops, and duplicate dot bypass.
+- [**Graphical User Interface (GUI) Guide**](file:///e:/Projects/MythoriaSolver/docs/GUI.md): Modular CustomTkinter architecture, off-screen anti-flicker rendering, and 0ms tab switching.
+- [**Database & Persistent Storage Guide**](file:///e:/Projects/MythoriaSolver/docs/DATABASE.md): SQLite schema design, signature indexes, and APPDATA settings structure.
+- [**Agent Onboarding & Development Guide**](file:///e:/Projects/MythoriaSolver/docs/AGENT_GUIDE.md): Invariant rules, how to add new solvers, regexes, or settings, and verification instructions.
 
 ---
 

@@ -129,6 +129,14 @@ class TestTriviaSolver:
         assert len(res) >= 1
         assert res[0]["answer"].lower() == a.lower()
 
+    def test_skip_duplicate_learning(self):
+        solver = TriviaSolver()
+        q = "Which mob explodes when near player?"
+        a = "Creeper"
+        assert solver.learn_answer(q, a) is True
+        # Learning identical answer again must return False to avoid re-learning
+        assert solver.learn_answer(q, a) is False
+
 
 # ── Solver Router Tests ──────────────────────────────────────────────────────
 class TestSolverRouter:

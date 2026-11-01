@@ -23,13 +23,18 @@ class TriviaSolver:
 
     def load_cache(self) -> None:
         if self.cache_file and not self.cache_file.exists():
-            bundle_cache = config.BUNDLE_DIR / "collector" / "trivia_cache.json"
-            if bundle_cache.exists() and bundle_cache != self.cache_file:
-                try:
-                    self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(bundle_cache, self.cache_file)
-                except Exception:
-                    self.cache_file = bundle_cache
+            candidate_sources = [
+                config.BUNDLE_DIR / "collector" / "trivia_cache.json",
+                config.BASE_DIR / "collector" / "trivia_cache.json",
+            ]
+            for source in candidate_sources:
+                if source.exists() and source.resolve() != self.cache_file.resolve():
+                    try:
+                        self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(source, self.cache_file)
+                        break
+                    except Exception:
+                        pass
 
         if self.cache_file and self.cache_file.exists():
             try:
@@ -44,12 +49,19 @@ class TriviaSolver:
             with open(self.cache_file, "w", encoding="utf-8") as f:
                 json.dump(self.qa_data, f, indent=2, ensure_ascii=False)
 
-    def learn_answer(self, question: str, answer: str) -> None:
+    def learn_answer(self, question: str, answer: str) -> bool:
         clean_q = question.strip()
         clean_a = answer.strip()
-        if clean_q and clean_a:
-            self.qa_data[clean_q] = clean_a
-            self.save_cache()
+        if not clean_q or not clean_a:
+            return False
+
+        # Prevent re-learning questions already known with the identical answer
+        if clean_q in self.qa_data and self.qa_data[clean_q].strip().lower() == clean_a.lower():
+            return False
+
+        self.qa_data[clean_q] = clean_a
+        self.save_cache()
+        return True
 
     def solve(self, question: str, limit: int = 1) -> List[Dict[str, Any]]:
         clean_q = question.strip()

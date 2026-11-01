@@ -89,9 +89,15 @@ class GeneralTab(ctk.CTkScrollableFrame):
         ctk.CTkLabel(send_m_row, text="Send Method", font=get_font(11, "bold")).pack(side="left")
         self.seg_send_method = ctk.CTkSegmentedButton(
             send_m_row, values=["paste", "write"],
-            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER
+            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
+            command=self._update_send_method_desc
         )
         self.seg_send_method.pack(side="right")
+
+        self.lbl_send_method_desc = ctk.CTkLabel(
+            s3, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+        )
+        self.lbl_send_method_desc.pack(fill="x", padx=14, pady=(0, 6))
 
         self.ent_chat_key = add_entry_row(s3, "Chat Key", "Key used to open chat in Minecraft (default: 't')")
         self.ent_cooldown = add_entry_row(s3, "Server Cooldown (Seconds)", "Minimum delay between consecutive chat messages (server limit: 3.0s)")
@@ -110,10 +116,35 @@ class GeneralTab(ctk.CTkScrollableFrame):
         guess_m_row.pack(fill="x", padx=14, pady=6)
         ctk.CTkLabel(guess_m_row, text="Guess Number Strategy", font=get_font(11, "bold")).pack(side="left")
         self.seg_guess_mode = ctk.CTkSegmentedButton(
-            guess_m_row, values=["all", "binary_search", "random", "single"],
-            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER
+            guess_m_row, values=["all", "binary_search", "random", "single", "skip"],
+            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
+            command=self._update_guess_mode_desc
         )
         self.seg_guess_mode.pack(side="right")
+
+        self.lbl_guess_desc = ctk.CTkLabel(
+            s4, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+        )
+        self.lbl_guess_desc.pack(fill="x", padx=14, pady=(0, 6))
+
+    def _update_send_method_desc(self, value=None):
+        val = value or self.seg_send_method.get()
+        descs = {
+            "paste": "📋 paste: ارسال با چسباندن کلیپ‌بورد (Ctrl+V) — سریع‌ترین متد و کاملاً مستقل از زبان کیبورد ویندوز (فارسی/انگلیسی)",
+            "write": "⌨️ write: تایپ شبیه‌سازی‌شده کاراکتر به کاراکتر با وقفه میلی‌ثانیه‌ای مشابه تایپ واقعی انسان",
+        }
+        self.lbl_send_method_desc.configure(text=descs.get(val, ""))
+
+    def _update_guess_mode_desc(self, value=None):
+        val = value or self.seg_guess_mode.get()
+        descs = {
+            "all": "🔢 all (تمام اعداد): تمام اعداد بازه را به نوبت در هر کول‌داون ۳ ثانیه‌ای امتحان می‌کند تا برنده شود.",
+            "binary_search": "🎯 binary_search (جستجوی دودویی): عدد میانی بازه را حدس می‌زند تا سریع‌ترین راه برای یافتن عدد باشد.",
+            "random": "🎲 random (حدس تصادفی): در هر نوبت یک عدد تصادفی از اعداد باقی‌مانده بازه را حدس می‌زند.",
+            "single": "☝️ single (تک حدس): فقط یک حدس در شروع بازی ارسال می‌کند و پیام دیگری نمی‌فرستد.",
+            "skip": "🚫 skip (صرف‌نظر): بازی‌های حدس عدد را کاملاً نادیده می‌گیرد و هیچ عددی ارسال نمی‌کند.",
+        }
+        self.lbl_guess_desc.configure(text=descs.get(val, ""))
 
     def populate(self, settings: Settings):
         self.ent_username.delete(0, "end")
@@ -133,6 +164,7 @@ class GeneralTab(ctk.CTkScrollableFrame):
             self.sw_require_focus.deselect()
 
         self.seg_send_method.set(settings.send_method)
+        self._update_send_method_desc(settings.send_method)
 
         self.ent_chat_key.delete(0, "end")
         self.ent_chat_key.insert(0, settings.chat_key)
@@ -153,6 +185,7 @@ class GeneralTab(ctk.CTkScrollableFrame):
         self.ent_ratio.insert(0, str(settings.answer_ratio))
 
         self.seg_guess_mode.set(settings.guess_number_mode)
+        self._update_guess_mode_desc(settings.guess_number_mode)
 
     def apply(self, settings: Settings):
         settings.player_username = self.ent_username.get().strip() or "Player"

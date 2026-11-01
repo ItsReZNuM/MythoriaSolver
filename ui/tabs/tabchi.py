@@ -66,9 +66,15 @@ class TabchiTab(ctk.CTkScrollableFrame):
         ctk.CTkLabel(order_row, text="Message Selection Order", font=get_font(11, "bold")).pack(side="left")
         self.seg_tabchi_order = ctk.CTkSegmentedButton(
             order_row, values=["cycle", "random"],
-            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER
+            font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
+            command=self._update_order_desc
         )
         self.seg_tabchi_order.pack(side="right")
+
+        self.lbl_order_desc = ctk.CTkLabel(
+            s_dispatch, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+        )
+        self.lbl_order_desc.pack(fill="x", padx=14, pady=(0, 6))
 
         self.sw_tabchi_dot = add_switch_row(s_dispatch, "Anti-Duplicate Dot Bypass (Sends '.' before advert to evade server duplicate block)")
         self.ent_tabchi_dot_delay = add_entry_row(s_dispatch, "Dot Cooldown Delay (Seconds)", "Wait time between the dot and the actual message")
@@ -165,6 +171,14 @@ class TabchiTab(ctk.CTkScrollableFrame):
         self.current_messages = list(DEFAULT_TABCHI_MESSAGES)
         self._refresh_advert_list_ui()
 
+    def _update_order_desc(self, value=None):
+        val = value or self.seg_tabchi_order.get()
+        descs = {
+            "cycle": "🔄 cycle (چرخشی/ترتیبی): پیام‌های تبلیغاتی را به ترتیب از اول تا آخر استخر پیام‌ها یکی پس از دیگری ارسال می‌کند.",
+            "random": "🎲 random (تصادفی): در هر نوبت ارسال، یک پیام را به‌صورت تصادفی از بین تمام پیام‌های موجود انتخاب می‌کند.",
+        }
+        self.lbl_order_desc.configure(text=descs.get(val, ""))
+
     def populate(self, settings: Settings):
         tab = settings.tabchi
         if tab.enabled:
@@ -184,6 +198,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
             self.sw_tabchi_random.deselect()
 
         self.seg_tabchi_order.set(tab.order)
+        self._update_order_desc(tab.order)
 
         if tab.anti_duplicate_dot:
             self.sw_tabchi_dot.select()

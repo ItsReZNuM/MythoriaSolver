@@ -93,6 +93,21 @@ class DashboardTab(ctk.CTkFrame):
         )
         self.txt_log.grid(row=2, column=0, sticky="nsew", pady=(0, 8))
 
+        # Color Tags for Live Visual Terminal Feed
+        self.txt_log.tag_config("WINNER", foreground="#22c55e")     # Vibrant Emerald Green (Our Bot Won!)
+        self.txt_log.tag_config("LOST", foreground="#f87171")       # Coral Rose/Red (Game Lost / Timeout)
+        self.txt_log.tag_config("ANSWER", foreground="#38bdf8")     # Electric Cyan (Answers Sent by Bot)
+        self.txt_log.tag_config("QUESTION", foreground="#facc15")   # Radiant Amber / Yellow (Game Questions)
+        self.txt_log.tag_config("SOLVER", foreground="#38bdf8")     # Sky Blue (Candidate Results)
+        self.txt_log.tag_config("GAME", foreground="#c084fc")       # Purple (Game Header)
+        self.txt_log.tag_config("STEALTH", foreground="#e879f9")    # Magenta (Fake Typo Injected)
+        self.txt_log.tag_config("TABCHI", foreground="#60a5fa")     # Blue (Promotional Ad Dispatched)
+        self.txt_log.tag_config("LEARN", foreground="#34d399")      # Mint Green (Self-Learning Q&A / Word)
+        self.txt_log.tag_config("WARN", foreground="#fb923c")       # Orange (Skipped / Filtered)
+        self.txt_log.tag_config("ERROR", foreground="#ef4444")      # Crimson Red (Runtime Errors)
+        self.txt_log.tag_config("INFO", foreground="#94a3b8")       # Slate Muted Gray (General Info)
+        self.txt_log.tag_config("TIMESTAMP", foreground="#64748b")  # Dark Slate (Timestamps)
+
         # ── Bottom Telemetry Bar ──
         self.telemetry_strip = ctk.CTkLabel(
             self,
@@ -105,11 +120,16 @@ class DashboardTab(ctk.CTkFrame):
         self.append_log("INFO", "MythoriaSolver GUI initialized and ready.")
 
     def append_log(self, tag: str, message: str):
-        """Appends formatted timestamped log line to the live terminal view."""
+        """Appends formatted, syntax-highlighted timestamped log line to the live terminal view."""
         now = time.strftime("%H:%M:%S")
-        prefix = f"[{now}] [{tag.upper()}]"
-        line = f"{prefix:<20} {message}\n"
-        self.txt_log.insert("end", line)
+        tag_upper = tag.upper()
+
+        # Insert muted timestamp prefix
+        self.txt_log.insert("end", f"[{now}] ", "TIMESTAMP")
+        # Insert color-coded tag badge
+        self.txt_log.insert("end", f"[{tag_upper:<8}] ", tag_upper)
+        # Insert message body with matching tag highlight
+        self.txt_log.insert("end", f"{message}\n", tag_upper)
         self.txt_log.see("end")
 
     def clear_logs(self):

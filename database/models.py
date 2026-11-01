@@ -41,15 +41,25 @@ class DatabaseManager:
         else:
             self.db_path = Path(db_path)
 
-        # In PyInstaller frozen environment, ensure database is initialized
+        # Ensure database is initialized in APPDATA from bundled or source clean database
         if not self.db_path.exists():
-            bundle_db = config.BUNDLE_DIR / "database" / "minecraft_clean.db"
-            if bundle_db.exists() and bundle_db != self.db_path:
-                try:
-                    self.db_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(bundle_db, self.db_path)
-                except Exception:
-                    self.db_path = bundle_db
+            candidate_sources = [
+                config.BUNDLE_DIR / "database" / "minecraft_clean.db",
+                config.BASE_DIR / "database" / "minecraft_clean.db",
+            ]
+            for source in candidate_sources:
+                if source.exists() and source.resolve() != self.db_path.resolve():
+                    try:
+                        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copy2(source, self.db_path)
+                        break
+                    except Exception:
+                        pass
+            if not self.db_path.exists():
+                for source in candidate_sources:
+                    if source.exists():
+                        self.db_path = source
+                        break
 
         self._items: List[MinecraftName] = []
         self._by_normalized: Dict[str, MinecraftName] = {}

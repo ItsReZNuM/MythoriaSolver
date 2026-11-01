@@ -1,3 +1,4 @@
+import re
 import random
 from typing import List
 
@@ -109,23 +110,47 @@ def plan_fake_attempts(correct_answer: str, stealth_cfg) -> List[str]:
 def looks_like_random_string(text: str) -> bool:
     """
     Heuristic: detect random-looking strings that shouldn't be learned.
-    Examples of random: 'OnpjAm', '84H2heqtC', 'SWGihXI'
-    Examples of real: 'Dead Bush', 'Nether Brick Slab', 'Cow'
+    Examples of random: 'OnpjAm', '84H2heqtC', 'SWGihXI', 'bcdfgh', 'zzzzz'
+    Examples of real: 'Dead Bush', 'Nether Brick Slab', 'Cow', 'Iron Ingot'
     """
     clean = text.strip()
     if not clean:
         return True
 
-    # If it contains spaces, it's likely a real Minecraft name
-    if " " in clean:
-        words = clean.split()
+    # 1. Reject invalid punctuation / code injection characters
+    if re.search(r"[^a-zA-Z0-9\s'\-]", clean):
+        return True
+
+    # 2. Reject 3 or more repeating identical characters (e.g. 'aaaa', 'zzzz')
+    if re.search(r"(.)\1\1", clean):
+        return True
+
+    # 3. Reject 5 or more consecutive consonants (e.g. 'bcdfgh')
+    if re.search(r"[bcdfghjklmnpqrstvwxz]{5,}", clean, re.IGNORECASE):
+        return True
+
+    words = clean.split()
+    VOWELS = set("aeiouyAEIOUY")
+
+    for w in words:
+        alpha_chars = [c for c in w if c.isalpha()]
+        # Words of length >= 3 must contain at least one vowel
+        if len(alpha_chars) >= 3 and not any(c in VOWELS for c in alpha_chars):
+            return True
+
+        # Words cannot contain mixed digits and letters (e.g. 'x8Z', 'sword12')
+        if any(c.isdigit() for c in w) and any(c.isalpha() for c in w):
+            return True
+
+    # Multi-word string check
+    if len(words) > 1:
         for w in words:
             if not _is_title_case_word(w) and not w.islower() and not w.isupper():
                 if "'" not in w:
                     return True
         return False
 
-    # Single word: check patterns
+    # Single word check
     # Pure digits = not a name
     if clean.isdigit():
         return True
@@ -134,7 +159,7 @@ def looks_like_random_string(text: str) -> bool:
     if clean[0].isupper() and (len(clean) == 1 or clean[1:].islower()):
         return False
 
-    # Short all-caps = likely random
+    # Short all-caps = likely random (e.g. 'XYZ', 'ABCDE')
     if clean.isupper() and len(clean) <= 5:
         return True
 
@@ -142,12 +167,6 @@ def looks_like_random_string(text: str) -> bool:
     if any(c.isupper() for c in clean[1:]) and any(c.islower() for c in clean):
         if not clean.istitle():
             return True
-
-    # Contains digits mixed with letters = random
-    has_digit = any(c.isdigit() for c in clean)
-    has_alpha = any(c.isalpha() for c in clean)
-    if has_digit and has_alpha:
-        return True
 
     return False
 

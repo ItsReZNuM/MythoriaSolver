@@ -38,7 +38,7 @@ class Config:
     ASSETS_DIR: Path = BUNDLE_DIR / "assets"
     APPDATA_DIR: Path = APPDATA_DIR
     SETTINGS_FILE: Path = APPDATA_DIR / "settings.json"
-    DB_PATH: Path = BASE_DIR / "database" / "minecraft_clean.db"
+    DB_PATH: Path = APPDATA_DIR / "database" / "minecraft_clean.db"
     COLLECTOR_DIR: Path = APPDATA_DIR / "collector"
     COLLECTOR_LOG_FILE: Path = COLLECTOR_DIR / "chat_games.jsonl"
     TRIVIA_CACHE_FILE: Path = COLLECTOR_DIR / "trivia_cache.json"

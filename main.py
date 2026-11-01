@@ -654,31 +654,39 @@ class MinecraftChatBot:
                 self._active_question_event
                 and "answer" in self._active_question_event.game_type.lower()
             ):
-                self.router.trivia_solver.learn_answer(
+                learned = self.router.trivia_solver.learn_answer(
                     self._active_question_event.clean_question, event.answer
                 )
-                console.print(
-                    f"[bold green][+ LEARNED TRIVIA][/bold green] Saved Q&A: "
-                    f"'{self._active_question_event.clean_question}' -> '{event.answer}'"
-                )
-                self._emit(
-                    "learned_trivia",
-                    question=self._active_question_event.clean_question,
-                    answer=event.answer,
-                )
+                if learned:
+                    console.print(
+                        f"[bold green][+ LEARNED TRIVIA][/bold green] Saved Q&A: "
+                        f"'{self._active_question_event.clean_question}' -> '{event.answer}'"
+                    )
+                    self._emit(
+                        "learned_trivia",
+                        question=self._active_question_event.clean_question,
+                        answer=event.answer,
+                    )
+                else:
+                    console.print(
+                        f"[dim][*] Trivia Q&A already known: '{self._active_question_event.clean_question}'[/dim]"
+                    )
 
             # 2. Self-learning for words/items/blocks
             elif self.settings.auto_learn_words:
                 answer_text = event.answer.strip()
                 skip_reason = None
 
-                if answer_text.isdigit():
+                norm = re.sub(r"[^a-z0-9]", "", answer_text.lower())
+                if self.db.find_by_normalized(norm) is not None:
+                    skip_reason = f"already known in database ('{answer_text}')"
+                elif answer_text.isdigit():
                     skip_reason = "numeric answer"
                 elif answer_text.lower() in {"yes", "no"}:
                     skip_reason = "yes/no answer"
                 elif len(answer_text) < self.settings.auto_learn_min_length:
                     skip_reason = f"too short ({len(answer_text)} < {self.settings.auto_learn_min_length})"
-                elif self.settings.auto_learn_filter_random and looks_like_random_string(answer_text):
+                elif looks_like_random_string(answer_text):
                     skip_reason = f"looks like random string ('{answer_text}')"
 
                 if skip_reason:

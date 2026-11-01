@@ -581,7 +581,7 @@ class MythoriaGUI(ctk.CTk):
                 self.stats_wins += 1
                 self.append_log("WINNER", f"★ OUR BOT WON THE GAME! Answer was: '{ans}'{dur_str}")
             else:
-                self.append_log("INFO", f"Game Ended. Winner: {winner} | Answer: '{ans}'{dur_str}")
+                self.append_log("LOST", f"✗ Game Lost. Winner: {winner} | Answer: '{ans}'{dur_str}")
 
             win_pct = (self.stats_wins / self.stats_games * 100) if self.stats_games > 0 else 0
             self.tab_dashboard.set_stat_wins(self.stats_wins, win_pct)

@@ -5,16 +5,18 @@ Human typo simulation, mistake injection, and anti-ban mechanics.
 import customtkinter as ctk
 
 from settings import Settings
+from ui.theme import C_BG
 from ui.components import (
+    SmoothScrollableFrame,
     create_settings_section,
     add_entry_row,
     add_switch_row,
 )
 
 
-class StealthTab(ctk.CTkScrollableFrame):
+class StealthTab(SmoothScrollableFrame):
     def __init__(self, master):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=C_BG)
         self.grid_columnconfigure(0, weight=1)
 
         # ── Section 1: Human Mistake Simulation ──

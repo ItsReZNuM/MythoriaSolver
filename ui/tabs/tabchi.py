@@ -2,6 +2,7 @@
 Tabchi / Auto-Advertiser Tab
 Automated auction promotion, interval scheduling, and anti-duplicate dot bypass.
 """
+import tkinter as tk
 from typing import Callable, Optional
 import customtkinter as ctk
 
@@ -11,6 +12,7 @@ from settings import (
 )
 from ui.theme import (
     get_font,
+    C_BG,
     C_CARD,
     C_BORDER,
     C_ACCENT,
@@ -21,19 +23,20 @@ from ui.theme import (
     C_TEXT_MUTED,
 )
 from ui.components import (
+    SmoothScrollableFrame,
     create_settings_section,
     add_entry_row,
     add_switch_row,
 )
 
 
-class TabchiTab(ctk.CTkScrollableFrame):
+class TabchiTab(SmoothScrollableFrame):
     def __init__(
         self,
         master,
         get_icon: Callable[[str], Optional[ctk.CTkImage]],
     ):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=C_BG)
         self.get_icon = get_icon
         self.current_messages = list(DEFAULT_TABCHI_MESSAGES)
 
@@ -61,9 +64,9 @@ class TabchiTab(ctk.CTkScrollableFrame):
             "Order and server anti-spam filter evasion"
         )
 
-        order_row = ctk.CTkFrame(s_dispatch, fg_color="transparent")
+        order_row = tk.Frame(s_dispatch, bg=C_CARD)
         order_row.pack(fill="x", padx=14, pady=6)
-        ctk.CTkLabel(order_row, text="Message Selection Order", font=get_font(11, "bold")).pack(side="left")
+        ctk.CTkLabel(order_row, text="Message Selection Order", font=get_font(11, "bold"), fg_color=C_CARD).pack(side="left")
         self.seg_tabchi_order = ctk.CTkSegmentedButton(
             order_row, values=["cycle", "random"],
             font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
@@ -72,7 +75,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
         self.seg_tabchi_order.pack(side="right")
 
         self.lbl_order_desc = ctk.CTkLabel(
-            s_dispatch, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+            s_dispatch, text="", font=get_font(10), text_color="#38bdf8", fg_color=C_CARD, justify="left", anchor="w"
         )
         self.lbl_order_desc.pack(fill="x", padx=14, pady=(0, 6))
 
@@ -86,7 +89,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
         )
 
         # Input to add new message
-        add_frame = ctk.CTkFrame(s_msgs, fg_color="transparent")
+        add_frame = tk.Frame(s_msgs, bg=C_CARD)
         add_frame.pack(fill="x", padx=14, pady=(6, 10))
         add_frame.grid_columnconfigure(0, weight=1)
 
@@ -105,7 +108,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
         btn_add_ad.grid(row=0, column=1)
 
         # Messages listbox container
-        self.ad_list_frame = ctk.CTkScrollableFrame(
+        self.ad_list_frame = SmoothScrollableFrame(
             s_msgs, fg_color="#12151d", height=180, corner_radius=6,
             border_width=1, border_color=C_BORDER
         )
@@ -113,7 +116,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
         self.ad_list_frame.grid_columnconfigure(0, weight=1)
 
         # Toolbar under messages list
-        list_toolbar = ctk.CTkFrame(s_msgs, fg_color="transparent")
+        list_toolbar = tk.Frame(s_msgs, bg=C_CARD)
         list_toolbar.pack(fill="x", padx=14, pady=(0, 6))
 
         btn_reset_ads = ctk.CTkButton(
@@ -123,7 +126,7 @@ class TabchiTab(ctk.CTkScrollableFrame):
         )
         btn_reset_ads.pack(side="left")
 
-        self.lbl_ad_count = ctk.CTkLabel(list_toolbar, text="", font=get_font(11), text_color=C_TEXT_MUTED)
+        self.lbl_ad_count = ctk.CTkLabel(list_toolbar, text="", font=get_font(11), text_color=C_TEXT_MUTED, fg_color=C_CARD)
         self.lbl_ad_count.pack(side="right")
 
     def _refresh_advert_list_ui(self):

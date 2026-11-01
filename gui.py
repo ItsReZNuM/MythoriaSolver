@@ -122,8 +122,8 @@ class MythoriaGUI(ctk.CTk):
         self.after(50, self._process_event_queue)
 
         # Force off-screen layout completion and smoothly reveal window
-        self.update_idletasks()
-        self.after(20, self.deiconify)
+        self.update()
+        self.deiconify()
 
     def get_icon(self, name: str) -> Optional[ctk.CTkImage]:
         return self.icons.get(name)
@@ -336,6 +336,9 @@ class MythoriaGUI(ctk.CTk):
                 actual_widget.tkraise()
             else:
                 frame.grid_remove()
+
+        # Synchronize layout instantly to prevent frame-by-frame pop-in
+        self.update_idletasks()
 
         # Update page title & description
         titles = {

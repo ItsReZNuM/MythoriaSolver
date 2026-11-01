@@ -3,6 +3,7 @@ Interactive Sandbox & Statistics Tab
 Direct puzzle solver testing playground and historical win rate analytics.
 """
 import time
+import tkinter as tk
 from typing import Callable, Optional
 import customtkinter as ctk
 
@@ -16,6 +17,8 @@ from solver.router import SolverRouter
 from database.models import DatabaseManager
 from ui.theme import (
     get_font,
+    C_BG,
+    C_CARD,
     C_BORDER,
     C_ACCENT,
     C_ACCENT_HOVER,
@@ -24,10 +27,13 @@ from ui.theme import (
     C_TEXT,
     C_TEXT_MUTED,
 )
-from ui.components import create_settings_section
+from ui.components import (
+    SmoothScrollableFrame,
+    create_settings_section,
+)
 
 
-class SandboxTab(ctk.CTkScrollableFrame):
+class SandboxTab(SmoothScrollableFrame):
     def __init__(
         self,
         master,
@@ -35,7 +41,7 @@ class SandboxTab(ctk.CTkScrollableFrame):
         db: DatabaseManager,
         get_icon: Callable[[str], Optional[ctk.CTkImage]],
     ):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=C_BG)
         self.router = router
         self.db = db
         self.get_icon = get_icon
@@ -48,7 +54,7 @@ class SandboxTab(ctk.CTkScrollableFrame):
             "Test any chat game puzzle or math expression with live solver verification"
         )
 
-        test_row = ctk.CTkFrame(s_box, fg_color="transparent")
+        test_row = tk.Frame(s_box, bg=C_CARD)
         test_row.pack(fill="x", padx=14, pady=8)
         test_row.grid_columnconfigure(0, weight=1)
 

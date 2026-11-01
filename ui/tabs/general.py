@@ -2,25 +2,29 @@
 General & Minecraft Configuration Tab
 Player account identity, Minecraft log selector, typing methods, and delays.
 """
+import tkinter as tk
 from typing import Callable, Optional
 import customtkinter as ctk
 
 from settings import Settings
 from ui.theme import (
     get_font,
+    C_BG,
+    C_CARD,
     C_BORDER,
     C_ACCENT,
     C_ACCENT_HOVER,
     C_TEXT,
 )
 from ui.components import (
+    SmoothScrollableFrame,
     create_settings_section,
     add_entry_row,
     add_switch_row,
 )
 
 
-class GeneralTab(ctk.CTkScrollableFrame):
+class GeneralTab(SmoothScrollableFrame):
     def __init__(
         self,
         master,
@@ -28,7 +32,7 @@ class GeneralTab(ctk.CTkScrollableFrame):
         on_browse_log: Callable[[], None],
         on_detect_log: Callable[[], None],
     ):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=C_BG)
         self.get_icon = get_icon
         self.on_browse_log = on_browse_log
         self.on_detect_log = on_detect_log
@@ -47,12 +51,12 @@ class GeneralTab(ctk.CTkScrollableFrame):
             self, "MINECRAFT INSTALLATION & LOG FILE",
             "Specify or auto-detect active latest.log path across all Minecraft launchers"
         )
-        path_row = ctk.CTkFrame(s2, fg_color="transparent")
+        path_row = tk.Frame(s2, bg=C_CARD)
         path_row.pack(fill="x", padx=14, pady=6)
-        lbl_p = ctk.CTkLabel(path_row, text="Active latest.log Path", font=get_font(11, "bold"), text_color=C_TEXT)
+        lbl_p = ctk.CTkLabel(path_row, text="Active latest.log Path", font=get_font(11, "bold"), text_color=C_TEXT, fg_color=C_CARD)
         lbl_p.pack(anchor="w")
 
-        path_input_row = ctk.CTkFrame(path_row, fg_color="transparent")
+        path_input_row = tk.Frame(path_row, bg=C_CARD)
         path_input_row.pack(fill="x", pady=(4, 0))
         path_input_row.grid_columnconfigure(0, weight=1)
 
@@ -84,9 +88,9 @@ class GeneralTab(ctk.CTkScrollableFrame):
         self.sw_dry_run = add_switch_row(s3, "Dry-Run Mode (Simulation only, no physical keystrokes sent)")
         self.sw_require_focus = add_switch_row(s3, "Require Minecraft Window Focus (Prevents typing while alt-tabbed)")
 
-        send_m_row = ctk.CTkFrame(s3, fg_color="transparent")
+        send_m_row = tk.Frame(s3, bg=C_CARD)
         send_m_row.pack(fill="x", padx=14, pady=6)
-        ctk.CTkLabel(send_m_row, text="Send Method", font=get_font(11, "bold")).pack(side="left")
+        ctk.CTkLabel(send_m_row, text="Send Method", font=get_font(11, "bold"), fg_color=C_CARD).pack(side="left")
         self.seg_send_method = ctk.CTkSegmentedButton(
             send_m_row, values=["paste", "write"],
             font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
@@ -95,7 +99,7 @@ class GeneralTab(ctk.CTkScrollableFrame):
         self.seg_send_method.pack(side="right")
 
         self.lbl_send_method_desc = ctk.CTkLabel(
-            s3, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+            s3, text="", font=get_font(10), text_color="#38bdf8", fg_color=C_CARD, justify="left", anchor="w"
         )
         self.lbl_send_method_desc.pack(fill="x", padx=14, pady=(0, 6))
 
@@ -112,9 +116,9 @@ class GeneralTab(ctk.CTkScrollableFrame):
         )
         self.ent_ratio = add_entry_row(s4, "Answer Ratio", "Answer 1 of every N games (1 = answer 100%, 2 = answer 50%, 3 = answer 33%)")
 
-        guess_m_row = ctk.CTkFrame(s4, fg_color="transparent")
+        guess_m_row = tk.Frame(s4, bg=C_CARD)
         guess_m_row.pack(fill="x", padx=14, pady=6)
-        ctk.CTkLabel(guess_m_row, text="Guess Number Strategy", font=get_font(11, "bold")).pack(side="left")
+        ctk.CTkLabel(guess_m_row, text="Guess Number Strategy", font=get_font(11, "bold"), fg_color=C_CARD).pack(side="left")
         self.seg_guess_mode = ctk.CTkSegmentedButton(
             guess_m_row, values=["all", "binary_search", "random", "single", "skip"],
             font=get_font(11, "bold"), selected_color=C_ACCENT, selected_hover_color=C_ACCENT_HOVER,
@@ -123,7 +127,7 @@ class GeneralTab(ctk.CTkScrollableFrame):
         self.seg_guess_mode.pack(side="right")
 
         self.lbl_guess_desc = ctk.CTkLabel(
-            s4, text="", font=get_font(10), text_color="#38bdf8", justify="left", anchor="w"
+            s4, text="", font=get_font(10), text_color="#38bdf8", fg_color=C_CARD, justify="left", anchor="w"
         )
         self.lbl_guess_desc.pack(fill="x", padx=14, pady=(0, 6))
 

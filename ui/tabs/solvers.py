@@ -2,6 +2,7 @@
 Solvers & Game Delays Tab
 Configure individual solver heuristics, response delays, and self-learning filters.
 """
+import tkinter as tk
 from typing import Dict, Any
 import customtkinter as ctk
 
@@ -13,19 +14,21 @@ from settings import (
 )
 from ui.theme import (
     get_font,
+    C_BG,
     C_BORDER,
     C_SUCCESS,
 )
 from ui.components import (
+    SmoothScrollableFrame,
     create_settings_section,
     add_entry_row,
     add_switch_row,
 )
 
 
-class SolversTab(ctk.CTkScrollableFrame):
+class SolversTab(SmoothScrollableFrame):
     def __init__(self, master):
-        super().__init__(master, fg_color="transparent")
+        super().__init__(master, fg_color=C_BG)
         self.grid_columnconfigure(0, weight=1)
 
         # ── Global Fallback Delays ──
@@ -55,14 +58,14 @@ class SolversTab(ctk.CTkScrollableFrame):
             )
             sw.grid(row=0, column=0, padx=12, pady=10, sticky="w")
 
-            delays_frame = ctk.CTkFrame(card, fg_color="transparent")
+            delays_frame = tk.Frame(card, bg="#12151d")
             delays_frame.grid(row=0, column=1, padx=12, pady=6, sticky="e")
 
-            ctk.CTkLabel(delays_frame, text="Min (s):", font=get_font(11)).pack(side="left", padx=4)
+            ctk.CTkLabel(delays_frame, text="Min (s):", font=get_font(11), fg_color="#12151d").pack(side="left", padx=4)
             ent_min = ctk.CTkEntry(delays_frame, width=64, height=28, font=get_font(11))
             ent_min.pack(side="left", padx=(0, 10))
 
-            ctk.CTkLabel(delays_frame, text="Max (s):", font=get_font(11)).pack(side="left", padx=4)
+            ctk.CTkLabel(delays_frame, text="Max (s):", font=get_font(11), fg_color="#12151d").pack(side="left", padx=4)
             ent_max = ctk.CTkEntry(delays_frame, width=64, height=28, font=get_font(11))
             ent_max.pack(side="left")
 

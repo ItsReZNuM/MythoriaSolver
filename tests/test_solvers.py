@@ -130,8 +130,9 @@ class TestTriviaSolver:
         assert res[0]["answer"].lower() == a.lower()
 
     def test_skip_duplicate_learning(self):
+        import time
         solver = TriviaSolver()
-        q = "Which mob explodes when near player?"
+        q = f"Which unique mob test {time.time()} explodes?"
         a = "Creeper"
         assert solver.learn_answer(q, a) is True
         # Learning identical answer again must return False to avoid re-learning

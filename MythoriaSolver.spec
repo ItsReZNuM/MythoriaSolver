@@ -9,7 +9,6 @@ datas = [
     ('database/minecraft_clean.db', 'database'),
     ('collector/trivia_cache.json', 'collector'),
     ('assets', 'assets'),
-    ('settings.json', '.'),
 ]
 binaries = []
 hiddenimports = [

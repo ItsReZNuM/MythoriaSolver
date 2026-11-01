@@ -3,7 +3,9 @@ MythoriaSolver - Modern CustomTkinter GUI
 Features:
   - Deep Obsidian Dark Theme
   - JetBrains Mono Typography
-  - Antialiased Icon Set (No emojis)
+  - Antialiased Icon Set (No emojis) with full icon mapping
+  - Butter-Smooth Instant Tab Switching (tkraise z-order, zero-flicker)
+  - APPDATA Settings Storage (%APPDATA%/MythoriaSolver/settings.json)
   - 6 Specialized Tabs:
       1. Dashboard & Live Bot Monitor
       2. General & Minecraft Configuration
@@ -13,7 +15,6 @@ Features:
       6. Interactive Solver Sandbox & Live Stats
   - Real-time Thread-safe Event Bridge
   - Minecraft Launcher Auto-Detector
-  - Full Persistent Configuration Persistence
 """
 import sys
 import os
@@ -37,6 +38,7 @@ from settings import (
     StealthSettings,
     TabchiSettings,
     DEFAULT_TABCHI_MESSAGES,
+    SETTINGS_FILE,
 )
 from minecraft.log_finder import detect_minecraft_logs, MinecraftInstance
 from solver.router import SolverRouter
@@ -70,10 +72,10 @@ class MythoriaGUI(ctk.CTk):
             except Exception:
                 pass
 
-        # Load Active Settings
+        # Load Active Settings from %APPDATA%/MythoriaSolver/settings.json
         self.settings = Settings.load()
 
-        # Database and Router (Lazy load or instant instance)
+        # Database and Router (Instant instances)
         self.db = DatabaseManager.get_instance()
         self.router = SolverRouter(self.db)
 
@@ -118,7 +120,7 @@ class MythoriaGUI(ctk.CTk):
 
     # ── Icon Loader ──────────────────────────────────────────────────────────
     def _load_icons(self):
-        """Loads 64x64 icons from assets/icons/ as CTkImage."""
+        """Loads 64x64 icons from assets/icons/ as CTkImage and sets up aliases."""
         icons_dir = config.ASSETS_DIR / "icons"
         self.icons: Dict[str, ctk.CTkImage] = {}
 
@@ -141,6 +143,21 @@ class MythoriaGUI(ctk.CTk):
                     )
                 except Exception:
                     pass
+
+        # Map tab_id to icon_name aliases
+        self.nav_icon_map = {
+            "dashboard": "dashboard",
+            "general": "settings",
+            "solvers": "solvers",
+            "stealth": "stealth",
+            "tabchi": "tabchi",
+            "sandbox": "stats",
+        }
+        for tab_id, icon_name in self.nav_icon_map.items():
+            if icon_name in self.icons and tab_id not in self.icons:
+                self.icons[tab_id] = self.icons[icon_name]
+            if f"{icon_name}_active" in self.icons and f"{tab_id}_active" not in self.icons:
+                self.icons[f"{tab_id}_active"] = self.icons[f"{icon_name}_active"]
 
         # Larger App Logo for Sidebar
         logo_p = config.ASSETS_DIR / "app_icon.png"
@@ -261,7 +278,7 @@ class MythoriaGUI(ctk.CTk):
         # Header Bar
         self._create_header_bar()
 
-        # Tab Frames Stack
+        # Tab Frames Stack Container
         self.tab_container = ctk.CTkFrame(self.main_content, fg_color="transparent")
         self.tab_container.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
         self.tab_container.grid_rowconfigure(0, weight=1)
@@ -275,6 +292,10 @@ class MythoriaGUI(ctk.CTk):
         self._build_tab_stealth()
         self._build_tab_tabchi()
         self._build_tab_sandbox()
+
+        # Mount ALL frames into the grid container once so they stay pre-rendered
+        for frame in self.tab_frames.values():
+            frame.grid(row=0, column=0, sticky="nsew")
 
         # Select initial tab
         self.current_tab = "dashboard"
@@ -325,31 +346,30 @@ class MythoriaGUI(ctk.CTk):
         )
         btn_save.pack(side="left")
 
-    # ── Tab Navigation ───────────────────────────────────────────────────────
+    # ── Tab Navigation (Silky Smooth Instant Switch) ──────────────────────────
     def switch_tab(self, tab_id: str):
         self.current_tab = tab_id
 
-        # Update button highlights
+        # Update button highlights & icons
         for tid, btn in self.nav_buttons.items():
+            icon_key = self.nav_icon_map.get(tid, tid)
             if tid == tab_id:
                 btn.configure(
                     fg_color=self.C_CARD,
                     text_color=self.C_ACCENT,
-                    image=self.get_icon(f"{tid}_active") or self.get_icon(tid)
+                    image=self.get_icon(f"{icon_key}_active") or self.get_icon(icon_key)
                 )
             else:
                 btn.configure(
                     fg_color="transparent",
                     text_color=self.C_TEXT_MUTED,
-                    image=self.get_icon(tid)
+                    image=self.get_icon(icon_key)
                 )
 
-        # Show target frame
-        for tid, frame in self.tab_frames.items():
-            if tid == tab_id:
-                frame.grid(row=0, column=0, sticky="nsew")
-            else:
-                frame.grid_forget()
+        # Instant 0ms visual switch without unmapping/re-rendering widgets!
+        target_frame = self.tab_frames.get(tab_id)
+        if target_frame:
+            target_frame.tkraise()
 
         # Update page title & description
         titles = {
@@ -432,7 +452,7 @@ class MythoriaGUI(ctk.CTk):
         # Bottom Telemetry Bar
         self.telemetry_strip = ctk.CTkLabel(
             f,
-            text=f"Active Player: {self.settings.player_username} | Log: {self.settings.get_active_log_path().name} | Focus Check: {'ON' if self.settings.require_focus else 'OFF'}",
+            text=f"Active Player: {self.settings.player_username} | Log: {self.settings.get_active_log_path().name} | Config: %APPDATA%/MythoriaSolver",
             font=get_font(10), text_color=self.C_TEXT_MUTED, anchor="w"
         )
         self.telemetry_strip.grid(row=3, column=0, sticky="ew")
@@ -729,17 +749,17 @@ class MythoriaGUI(ctk.CTk):
         )
         lbl_db_items.pack(anchor="w", pady=2)
 
+        settings_path_lbl = ctk.CTkLabel(
+            db_info_frame, text=f"• Persistent Settings Path: {SETTINGS_FILE}",
+            font=get_font(11), text_color=self.C_ACCENT
+        )
+        settings_path_lbl.pack(anchor="w", pady=2)
+
         db_path_lbl = ctk.CTkLabel(
             db_info_frame, text=f"• Database Path: {config.DB_PATH}",
             font=get_font(11), text_color=self.C_TEXT_MUTED
         )
         db_path_lbl.pack(anchor="w", pady=2)
-
-        collector_lbl = ctk.CTkLabel(
-            db_info_frame, text=f"• Session Logs: {config.COLLECTOR_LOG_FILE}",
-            font=get_font(11), text_color=self.C_TEXT_MUTED
-        )
-        collector_lbl.pack(anchor="w", pady=2)
 
         # Historical Collector Stats
         hist_stats = self.bot_instance.collector.get_stats() if self.bot_instance else {}
@@ -1031,18 +1051,18 @@ class MythoriaGUI(ctk.CTk):
         s.tabchi.anti_duplicate_dot = bool(self.sw_tabchi_dot.get())
 
     def save_all_settings(self):
-        """Save settings to settings.json and provide animated UI feedback."""
+        """Save settings to %APPDATA%/MythoriaSolver/settings.json and provide UI feedback."""
         self._collect_settings_from_ui()
         self.settings.save()
 
         # Update telemetry strip
         active_p = self.settings.get_active_log_path()
         self.telemetry_strip.configure(
-            text=f"Active Player: {self.settings.player_username} | Log: {active_p.name} | Focus Check: {'ON' if self.settings.require_focus else 'OFF'}"
+            text=f"Active Player: {self.settings.player_username} | Log: {active_p.name} | Config: %APPDATA%/MythoriaSolver/settings.json"
         )
 
         self.lbl_save_status.configure(text="Settings Saved ✓")
-        self.append_log("INFO", "Settings saved successfully to settings.json.")
+        self.append_log("INFO", f"Settings saved to {SETTINGS_FILE}")
 
         # Clear feedback after 2.5s
         self.after(2500, lambda: self.lbl_save_status.configure(text=""))
@@ -1330,7 +1350,6 @@ class MythoriaGUI(ctk.CTk):
             else:
                 self.append_log("INFO", f"Game Ended. Winner: {winner} | Answer: '{ans}'{dur_str}")
 
-            # Update stats
             win_pct = (self.stats_wins / self.stats_games * 100) if self.stats_games > 0 else 0
             self.card_wins.configure(text=f"{self.stats_wins} ({win_pct:.0f}%)")
 

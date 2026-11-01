@@ -28,7 +28,10 @@ dumper.bat
 # Session data (runtime history)
 collector/chat_games.jsonl
 
-# PyInstaller build cache (exclude temporary build object files)
+# User settings (stored in %APPDATA%/MythoriaSolver/settings.json)
+settings.json
+
+# PyInstaller build cache
 build/
 
 # Temporary files

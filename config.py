@@ -3,6 +3,20 @@ import sys
 from pathlib import Path
 from dataclasses import dataclass
 
+def get_appdata_dir() -> Path:
+    """Return persistent configuration directory in %APPDATA%/MythoriaSolver."""
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            p = Path(appdata) / "MythoriaSolver"
+            p.mkdir(parents=True, exist_ok=True)
+            return p
+    p = Path.home() / ".mythoria"
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+APPDATA_DIR = get_appdata_dir()
+
 # Support PyInstaller frozen bundles and persistent directory locations
 if getattr(sys, "frozen", False):
     EXE_DIR = Path(sys.executable).parent.resolve()
@@ -22,8 +36,10 @@ class Config:
     BASE_DIR: Path = BASE_DIR
     BUNDLE_DIR: Path = BUNDLE_DIR
     ASSETS_DIR: Path = BUNDLE_DIR / "assets"
+    APPDATA_DIR: Path = APPDATA_DIR
+    SETTINGS_FILE: Path = APPDATA_DIR / "settings.json"
     DB_PATH: Path = BASE_DIR / "database" / "minecraft_clean.db"
-    COLLECTOR_DIR: Path = BASE_DIR / "collector"
+    COLLECTOR_DIR: Path = APPDATA_DIR / "collector"
     COLLECTOR_LOG_FILE: Path = COLLECTOR_DIR / "chat_games.jsonl"
     TRIVIA_CACHE_FILE: Path = COLLECTOR_DIR / "trivia_cache.json"
 

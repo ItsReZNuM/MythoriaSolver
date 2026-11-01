@@ -334,6 +334,18 @@ class MythoriaGUI(ctk.CTk):
                 frame.grid()
                 actual_widget = getattr(frame, "_parent_frame", frame)
                 actual_widget.tkraise()
+                if hasattr(frame, "_parent_canvas"):
+                    try:
+                        frame._parent_canvas.configure(scrollregion=frame._parent_canvas.bbox("all"))
+                        if sys.platform == "win32":
+                            import win32gui
+                            import win32con
+                            win32gui.RedrawWindow(
+                                frame._parent_canvas.winfo_id(), None, None,
+                                win32con.RDW_INVALIDATE | win32con.RDW_ERASE | win32con.RDW_ALLCHILDREN | win32con.RDW_UPDATENOW
+                            )
+                    except Exception:
+                        pass
             else:
                 frame.grid_remove()
 

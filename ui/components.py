@@ -2,7 +2,7 @@
 MythoriaSolver Reusable UI Components
 Cards, Sections, Styled Inputs, Toggles, and Smooth Hardware-Synchronized Scrollable Frame.
 """
-import time
+import sys
 import tkinter as tk
 import customtkinter as ctk
 from ui.theme import (
@@ -15,65 +15,76 @@ from ui.theme import (
     C_SUCCESS,
 )
 
+# Win32 GDI Redraw flags to completely eradicate canvas bitblt ghosting & smeared duplicate text
+HAS_WIN32 = False
+if sys.platform == "win32":
+    try:
+        import win32gui
+        import win32con
+        HAS_WIN32 = True
+        REDRAW_DRAG_FLAGS = win32con.RDW_INVALIDATE | win32con.RDW_ERASE | win32con.RDW_ALLCHILDREN
+        REDRAW_RELEASE_FLAGS = REDRAW_DRAG_FLAGS | win32con.RDW_UPDATENOW
+    except ImportError:
+        HAS_WIN32 = False
+
 
 class SmoothScrollableFrame(ctk.CTkScrollableFrame):
     """
-    Optimized scrollable frame with hardware-synchronized, throttled scrolling.
-    Eliminates Tkinter Canvas bitblt ghosting, smeared duplicate text, and widget lag.
+    Hardware-synchronized, 0ms-latency scrollable frame on Windows.
+    Completely eliminates Tkinter Canvas GDI BitBlt ghosting, lagging text, and duplicate copies.
     """
     def __init__(self, master, **kwargs):
         kwargs.setdefault("fg_color", C_BG)
         super().__init__(master, **kwargs)
 
         self._parent_canvas.configure(bg=C_BG)
-        self._last_scroll_time = 0.0
-        self._pending_scroll = None
-        self._flush_job = None
-
+        self._canvas_hwnd = None
         orig_yview = self._parent_canvas.yview
 
-        def throttled_yview(action, *args):
-            now = time.perf_counter()
-            if action == "moveto":
-                target = float(args[0])
-                # Throttle to 60 FPS (16ms) to prevent event queue starvation
-                if now - self._last_scroll_time >= 0.016:
-                    self._last_scroll_time = now
-                    orig_yview("moveto", target)
-                    self._parent_canvas.update_idletasks()
-                    self._pending_scroll = None
-                else:
-                    self._pending_scroll = target
-                    if not self._flush_job:
-                        self._flush_job = self.after(16, self._flush_scroll)
-            else:
-                orig_yview(action, *args)
-                self._parent_canvas.update_idletasks()
+        def sync_yview(action, *args):
+            # 1. Execute canvas scroll in real-time (0ms delay - 1:1 tracking with mouse)
+            orig_yview(action, *args)
 
-        self._scrollbar.configure(command=throttled_yview)
+            # 2. Invalidate canvas & all child windows to wipe GDI BitBlt trails instantly
+            if HAS_WIN32:
+                try:
+                    if self._canvas_hwnd is None:
+                        self._canvas_hwnd = self._parent_canvas.winfo_id()
+                    win32gui.RedrawWindow(self._canvas_hwnd, None, None, REDRAW_DRAG_FLAGS)
+                except Exception:
+                    pass
 
-        # Flush exact target when user releases the scrollbar thumb
-        self._scrollbar.bind("<ButtonRelease-1>", lambda e: self._flush_scroll(), add="+")
-        self._scrollbar._canvas.bind("<ButtonRelease-1>", lambda e: self._flush_scroll(), add="+")
+        self._scrollbar.configure(command=sync_yview)
 
-    def _flush_scroll(self):
-        if self._flush_job:
-            try:
-                self.after_cancel(self._flush_job)
-            except Exception:
-                pass
-            self._flush_job = None
+        def on_release(event=None):
+            if HAS_WIN32:
+                try:
+                    if self._canvas_hwnd is None:
+                        self._canvas_hwnd = self._parent_canvas.winfo_id()
+                    win32gui.RedrawWindow(self._canvas_hwnd, None, None, REDRAW_RELEASE_FLAGS)
+                except Exception:
+                    pass
 
-        if self._pending_scroll is not None:
-            t = self._pending_scroll
-            self._pending_scroll = None
-            self._parent_canvas.yview("moveto", t)
-            self._parent_canvas.update_idletasks()
-            self._last_scroll_time = time.perf_counter()
+        self._scrollbar.bind("<ButtonRelease-1>", on_release, add="+")
+        self._scrollbar._canvas.bind("<ButtonRelease-1>", on_release, add="+")
 
     def _mouse_wheel_all(self, event):
         super()._mouse_wheel_all(event)
-        self._parent_canvas.update_idletasks()
+        if HAS_WIN32:
+            try:
+                if self._canvas_hwnd is None:
+                    self._canvas_hwnd = self._parent_canvas.winfo_id()
+                win32gui.RedrawWindow(self._canvas_hwnd, None, None, REDRAW_DRAG_FLAGS)
+            except Exception:
+                pass
+
+    def _fit_frame_dimensions_to_canvas(self, event):
+        if self._orientation == "vertical":
+            w = event.width if event and hasattr(event, "width") and event.width > 1 else self._parent_canvas.winfo_width()
+            self._parent_canvas.itemconfigure(self._create_window_id, width=w)
+        else:
+            h = event.height if event and hasattr(event, "height") and event.height > 1 else self._parent_canvas.winfo_height()
+            self._parent_canvas.itemconfigure(self._create_window_id, height=h)
 
 
 def create_settings_section(parent, title: str, subtitle: str = "") -> ctk.CTkFrame:
